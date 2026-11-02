@@ -225,9 +225,10 @@
 
   U.pageHead = function (view, extra) {
     return h('header', { class: 'pagehead' },
-      h('div', { class: 'ph-main' },
-        h('h1', null, view.title),
-        view.blurb ? h('p', { class: 'ph-blurb' }, view.short || view.blurb) : null),
+      h('h1', null, view.title),
+      view.blurb ? h('p', { class: 'ph-blurb' }, view.short || view.blurb) : null,
+      view.sections && view.sections.length ? h('button', { type: 'button', class: 'ph-custom', title: 'Customize this page', 'aria-label': 'Customize this page', onclick: () => GA.openLayout(view.id) },
+        U.s('svg', { viewBox: '0 0 24 24', width: 18, height: 18, class: 'nicon' }, U.s('path', { d: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5' }))) : null,
       extra || null);
   };
 
@@ -262,5 +263,162 @@
   };
   U.scaleOptions = function () {
     return T.SCALES.map((s) => ({ value: s.id, label: s.name, group: s.family }));
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* ---------- Page sections: user-orderable, hideable, collapsible cards ---------- */
+(function (root) {
+  'use strict';
+  const GA = root.GA, U = GA.UI, h = U.h;
+
+  /** Layout for a view: { shown: [ids], hidden: [ids] }, merged with the view's defaults. */
+  U.layoutFor = function (view) {
+    const defs = view.sections || [];
+    const def = U.defaultLayout(view);
+    const saved = U.storage.get('layout.' + view.id, null);
+    if (!saved) return def;
+    const known = new Set(defs.map((d) => d.id));
+    const shown = (saved.shown || []).filter((id) => known.has(id));
+    const hidden = (saved.hidden || []).filter((id) => known.has(id) && !shown.includes(id));
+    // sections added in a later version go where their default puts them
+    for (const d of defs) if (!shown.includes(d.id) && !hidden.includes(d.id)) (d.hidden ? hidden : shown).push(d.id);
+    return { shown, hidden };
+  };
+  U.defaultLayout = (view) => ({
+    shown: (view.sections || []).filter((d) => !d.hidden).map((d) => d.id),
+    hidden: (view.sections || []).filter((d) => d.hidden).map((d) => d.id),
+  });
+  U.saveLayout = (view, layout) => U.storage.set('layout.' + view.id, layout);
+  U.resetLayout = (view) => { try { localStorage.removeItem('fretbook.layout.' + view.id); } catch (e) { /* ignore */ } };
+
+  /**
+   * Render a view's sections in the user's order.
+   * renderers: { id: () => node | null, ... }; asides: { id: () => node }
+   */
+  U.renderSections = function (view, renderers, asides = {}) {
+    const layout = U.layoutFor(view);
+    const byId = Object.fromEntries((view.sections || []).map((d) => [d.id, d]));
+    const out = [];
+    for (const id of layout.shown) {
+      const def = byId[id];
+      const fn = renderers[id];
+      if (!def || !fn) continue;
+      const body = fn();
+      if (body == null) continue;
+      out.push(U.card(view.id + '.' + id, def.title, body, { aside: asides[id] ? asides[id]() : null, bare: def.bare, open: !def.collapsed }));
+    }
+    if (!out.length) out.push(h('div', { class: 'empty' }, 'Every section on this page is hidden. ', h('button', { type: 'button', class: 'morelink', onclick: () => GA.openLayout(view.id) }, 'Choose what to show')));
+    return h('div', { class: 'sections' }, out);
+  };
+
+  /** A collapsible card. State is remembered per key. */
+  U.card = function (key, title, body, opts = {}) {
+    const stKey = 'collapsed.' + key;
+    const collapsed = U.storage.get(stKey, opts.open === false);
+    const sec = h('section', { class: ['card', collapsed ? 'is-collapsed' : '', opts.bare ? 'card-bare' : ''], 'data-sec': key });
+    const toggle = () => {
+      const now = !sec.classList.contains('is-collapsed');
+      sec.classList.toggle('is-collapsed', now);
+      btn.setAttribute('aria-expanded', String(!now));
+      U.storage.set(stKey, now);
+    };
+    const btn = h('button', { type: 'button', class: 'card-toggle', 'aria-expanded': String(!collapsed), onclick: toggle },
+      h('span', { class: 'card-title' }, title));
+    sec.append(
+      h('header', { class: 'card-h' }, btn, opts.aside ? h('div', { class: 'card-aside' }, opts.aside) : null,
+        h('button', { type: 'button', class: 'card-chevbtn', tabindex: -1, 'aria-hidden': 'true', onclick: toggle }, h('span', { class: 'card-chev' }))),
+      h('div', { class: 'card-wrap' }, h('div', { class: 'card-inner' }, h('div', { class: 'card-body' }, body))));
+    return sec;
+  };
+
+  /* ---------- Layout editor (used in Settings) ---------- */
+  U.layoutEditor = function (view, onChange) {
+    const defs = Object.fromEntries((view.sections || []).map((d) => [d.id, d]));
+    const layout = U.layoutFor(view);
+    const wrap = h('div', { class: 'lay' });
+
+    const item = (id, list) => h('li', { class: 'lay-item', 'data-id': id },
+      h('span', { class: 'lay-grip', 'aria-hidden': 'true' }, U.s('svg', { viewBox: '0 0 10 16', width: 10, height: 16 }, [3, 8, 13].map((y) => [U.s('circle', { cx: 2.5, cy: y, r: 1.3 }), U.s('circle', { cx: 7.5, cy: y, r: 1.3 })]))),
+      h('span', { class: 'lay-name' }, defs[id].title),
+      h('button', { type: 'button', class: 'lay-eye', title: list === 'shown' ? 'Hide' : 'Show', 'aria-label': (list === 'shown' ? 'Hide ' : 'Show ') + defs[id].title,
+        onclick: () => { move(id, list === 'shown' ? 'hidden' : 'shown'); } }, list === 'shown' ? 'Hide' : 'Show'));
+
+    const lists = {
+      shown: h('ul', { class: 'lay-list', 'data-list': 'shown' }, layout.shown.map((id) => item(id, 'shown'))),
+      hidden: h('ul', { class: 'lay-list lay-hidden', 'data-list': 'hidden' }, layout.hidden.map((id) => item(id, 'hidden'))),
+    };
+    lists.hidden.appendChild(h('li', { class: 'lay-placeholder-empty' }, 'Drag sections here to hide them'));
+
+    function commit() {
+      const next = {
+        shown: [...lists.shown.querySelectorAll('.lay-item')].map((x) => x.dataset.id),
+        hidden: [...lists.hidden.querySelectorAll('.lay-item')].map((x) => x.dataset.id),
+      };
+      U.saveLayout(view, next);
+      onChange();
+    }
+    function move(id, to) {
+      const el = wrap.querySelector(`.lay-item[data-id="${id}"]`);
+      lists[to].insertBefore(el, lists[to].querySelector('.lay-placeholder-empty'));
+      commit();
+    }
+
+    // pointer-driven drag & drop (works with mouse, pen and touch)
+    let drag = null;
+    wrap.addEventListener('pointerdown', (e) => {
+      const it = e.target.closest('.lay-item');
+      if (!it || e.target.closest('.lay-eye') || e.button > 0) return;
+      e.preventDefault();
+      const r = it.getBoundingClientRect();
+      const ghost = it.cloneNode(true);
+      ghost.classList.add('lay-ghost');
+      Object.assign(ghost.style, { width: r.width + 'px', left: r.left + 'px', top: r.top + 'px' });
+      document.body.appendChild(ghost);
+      it.classList.add('lay-dragging');
+      drag = { it, ghost, dy: e.clientY - r.top, dx: e.clientX - r.left };
+      wrap.setPointerCapture && wrap.setPointerCapture(e.pointerId);
+    });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      drag.moved = true;
+      const sc = wrap.closest('.settings-b');
+      if (sc) {
+        const r = sc.getBoundingClientRect();
+        if (e.clientY < r.top + 48) sc.scrollTop -= 12;
+        else if (e.clientY > r.bottom - 48) sc.scrollTop += 12;
+      }
+      drag.ghost.style.top = e.clientY - drag.dy + 'px';
+      drag.ghost.style.left = e.clientX - drag.dx + 'px';
+      // which list are we over?
+      let target = null;
+      for (const l of Object.values(lists)) {
+        const r = l.getBoundingClientRect();
+        if (e.clientY >= r.top - 14 && e.clientY <= r.bottom + 14) target = l;
+      }
+      if (!target) return;
+      const siblings = [...target.querySelectorAll('.lay-item:not(.lay-dragging)')];
+      const before = siblings.find((s) => { const r = s.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+      target.insertBefore(drag.it, before || target.querySelector('.lay-placeholder-empty'));
+    });
+    const end = () => {
+      if (!drag) return;
+      drag.ghost.remove();
+      drag.it.classList.remove('lay-dragging');
+      const it = drag.it, moved = drag.moved;
+      drag = null;
+      if (!moved) return;
+      const list = it.parentNode.dataset.list;
+      const eye = it.querySelector('.lay-eye');
+      eye.textContent = list === 'shown' ? 'Hide' : 'Show';
+      commit();
+    };
+    wrap.addEventListener('pointerup', end);
+    wrap.addEventListener('pointercancel', end);
+
+    wrap.append(
+      h('div', { class: 'lay-label' }, 'Shown, top to bottom'), lists.shown,
+      h('div', { class: 'lay-label' }, 'Hidden'), lists.hidden,
+      h('button', { type: 'button', class: 'btn btn-ghost lay-reset', onclick: () => { U.resetLayout(view); onChange(); } }, 'Reset to default'));
+    return wrap;
   };
 })(typeof window !== 'undefined' ? window : globalThis);

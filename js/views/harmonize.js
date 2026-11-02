@@ -11,6 +11,12 @@
     short: 'The chords that live inside a scale.',
     blurb: 'Harmonise any scale: the diatonic triads and sevenths with Roman numerals, plus every chord that fits.',
     keywords: 'diatonic chords in key harmonize roman numerals',
+    sections: [
+      { id: 'scale', title: 'Scale' },
+      { id: 'triads', title: 'Triads' },
+      { id: 'sevenths', title: 'Seventh chords' },
+      { id: 'fits', title: 'Every chord that fits', collapsed: true },
+    ],
     render(el, p, ctx) {
       const root = p.root != null ? +p.root : 7;
       const id = T.SCALE_BY_ID[p.scale] ? p.scale : 'major';
@@ -43,26 +49,24 @@
         U.pageHead(this),
         h('div', { class: 'picker' },
           U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v }) }),
-          h('div', { class: 'controls-row' },
-            U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v }), fk: 'scale', wide: true }),
-            harm ? U.seg({ value: kind, fk: 'k', options: [{ value: 'both', label: 'Triads & 7ths' }, { value: '3', label: 'Triads' }, { value: '7', label: 'Sevenths' }], onChange: (v) => ctx.update({ k: v === 'both' ? null : v }) }) : null)),
-        h('div', { class: 'keyline' },
-          h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
-          U.formula(sc.names, sc.intervals)),
-        harm ? [
-          kind !== '7' ? U.section('Triads', h('div', { class: 'degrees' }, harm.rows.map((r) => card(r.triad && { rootPc: r.rootPc, typeId: r.triad.typeId }, r.triad ? r.triad.roman : r.degree))),
-            { aside: U.button('Play I → vii', () => playAll('3'), { icon: 'play', kind: 'ghost' }) }) : null,
-          kind !== '3' ? U.section('Seventh chords', h('div', { class: 'degrees' }, harm.rows.map((r) => card(r.seventh && { rootPc: r.rootPc, typeId: r.seventh.typeId }, r.seventh ? r.seventh.roman : r.degree))),
-            { aside: U.button('Play all', () => playAll('7'), { icon: 'play', kind: 'ghost' }) }) : null,
-          h('div', { class: 'controls-row' }, U.button('Build a progression in this key', () => GA.go('progressions', { root, scale: id === 'minor' || id === 'harmminor' ? 'minor' : 'major' }), { icon: 'right', kind: 'ghost' })),
-        ] : h('p', { class: 'note' }, 'This scale doesn’t have seven notes, so there’s no stack-of-thirds harmony. Here is every chord from the library that fits inside it:'),
-
-        U.disclosure('Every chord that fits', h('div', { class: 'fitlist' }, fits.map((row) => h('div', { class: 'fitrow' },
-          h('div', { class: 'fit-root' }, h('span', { class: 'fnote' }, T.fmt(row.rootName)), h('span', { class: 'fiv' }, T.fmt(row.interval))),
-          h('div', { class: 'fit-chips' }, row.chords.length ? row.chords.map((c) => h('a', {
-            class: 'chip', href: GA.href('chords', { root: row.rootPc, type: c.id }), title: c.name,
-          }, T.fmt(row.rootName + c.sym))) : h('span', { class: 'muted' }, 'none'))))),
-        { id: 'fits', open: !harm, hint: 'chords built only from notes of the scale' }),
+          U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v }), fk: 'scale', wide: true })),
+        U.renderSections(this, {
+          scale: () => h('div', { class: 'hero-block' },
+            h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
+            U.formula(sc.names, sc.intervals),
+            harm ? h('div', { class: 'ch-actions' }, h('a', { class: 'textlink', href: GA.href('progressions', { root, scale: id === 'minor' || id === 'harmminor' ? 'minor' : 'major' }) }, 'Build a progression in this key →'))
+              : h('p', { class: 'note muted' }, 'No seven-note harmony for this scale — see every chord that fits.')),
+          triads: () => (harm ? h('div', { class: 'degrees' }, harm.rows.map((r) => card(r.triad && { rootPc: r.rootPc, typeId: r.triad.typeId }, r.triad ? r.triad.roman : r.degree))) : null),
+          sevenths: () => (harm ? h('div', { class: 'degrees' }, harm.rows.map((r) => card(r.seventh && { rootPc: r.rootPc, typeId: r.seventh.typeId }, r.seventh ? r.seventh.roman : r.degree))) : null),
+          fits: () => h('div', { class: 'fitlist' }, fits.map((row) => h('div', { class: 'fitrow' },
+            h('div', { class: 'fit-root' }, h('span', { class: 'fnote' }, T.fmt(row.rootName)), h('span', { class: 'fiv' }, T.fmt(row.interval))),
+            h('div', { class: 'fit-chips' }, row.chords.length ? row.chords.map((c) => h('a', {
+              class: 'chip', href: GA.href('chords', { root: row.rootPc, type: c.id }), title: c.name,
+            }, T.fmt(row.rootName + c.sym))) : h('span', { class: 'muted' }, 'none'))))),
+        }, {
+          triads: () => U.button('Play', () => playAll('3'), { icon: 'play', kind: 'quiet-text' }),
+          sevenths: () => U.button('Play', () => playAll('7'), { icon: 'play', kind: 'quiet-text' }),
+        }),
       );
     },
   });

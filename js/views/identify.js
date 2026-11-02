@@ -21,6 +21,10 @@
     short: 'Tap a shape or pick notes to name it.',
     blurb: 'Tap a shape on the neck or pick notes, and get the chord’s name — slash chords and inversions included.',
     keywords: 'name that chord finder what chord is this reverse',
+    sections: [
+      { id: 'input', title: 'Your notes' },
+      { id: 'result', title: 'Result' },
+    ],
     render(el, p, ctx) {
       const tuning = GA.settings.tuning().notes;
       const n = tuning.length;
@@ -121,14 +125,15 @@
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'controls' }, U.seg({ value: mode, fk: 'mode', options: [{ value: 'neck', label: 'On the fretboard' }, { value: 'notes', label: 'From notes' }], onChange: (v) => ctx.update({ m: v === 'notes' ? 'notes' : null }) })),
-        h('div', { class: 'id-grid' },
-          h('div', { class: 'id-input' }, input),
-          h('div', { class: 'id-out' }, resultBlock,
+        h('div', { class: 'picker' }, U.seg({ value: mode, fk: 'mode', options: [{ value: 'neck', label: 'On the fretboard' }, { value: 'notes', label: 'From notes' }], onChange: (v) => ctx.update({ m: v === 'notes' ? 'notes' : null }) })),
+        U.renderSections(this, {
+          input: () => h('div', { class: 'id-input' }, input),
+          result: () => h('div', { class: 'id-out' }, resultBlock,
             mode === 'neck' && pcs.length >= 2 ? h('div', { class: 'id-diagram' }, R.chordDiagram({
               frets, fingers: V.fingering(frets).fingers, barre: V.fingering(frets).barre, midis,
               intervals: midis.map((m) => (m == null ? null : ivOf(m % 12))),
-            }, { names: new Map(pcs.map((pc) => [pc, nameOf(pc)])) })) : null)),
+            }, { names: new Map(pcs.map((pc) => [pc, nameOf(pc)])) })) : null),
+        }),
       );
     },
   });

@@ -11,6 +11,13 @@
     short: 'Pick a root and a type.',
     blurb: 'Every root, ' + T.CHORDS.length + ' chord types, many shapes each — with formulas, notes and where the tones sit on the neck.',
     keywords: 'all chords chart voicing shapes',
+    sections: [
+      { id: 'chord', title: 'Chord' },
+      { id: 'shapes', title: 'Shapes' },
+      { id: 'neck', title: 'On the neck' },
+      { id: 'bass', title: 'Bass note & inversions', collapsed: true },
+      { id: 'piano', title: 'Piano keyboard', hidden: true },
+    ],
     render(el, p, ctx) {
       const root = p.root != null ? +p.root : 0;
       const typeId = T.CHORD_BY_ID[p.type] ? p.type : 'maj';
@@ -29,61 +36,57 @@
       const fullSym = ch.symbol + (bassName ? '/' + bassName : '');
 
       const limit = p.all === '1' ? voicings.length : 8;
-      const optionsOpen = bass != null || inv;
+
+      const neck = () => [
+        R.fretboard({
+          tuning,
+          mark: (s, f, midi) => {
+            const pc = midi % 12;
+            if (!ivByPc.has(pc)) return null;
+            const iv = ivByPc.get(pc);
+            const lab = GA.settings.get('labels') === 'intervals' ? T.fmt(iv) : T.fmt(names.get(pc));
+            if (active) return active.frets[s] === f ? { label: lab, role: T.ivRole(iv) } : { label: '', role: 'ghost' };
+            return { label: lab, role: T.ivRole(iv) };
+          },
+          onCell: (s, f, midi) => A.pluck(midi),
+          highlightFrets: active ? [active.minFret || 0, Math.max(active.maxFret, (active.minFret || 1) + 3)] : null,
+        }),
+        labelLegend(),
+      ];
 
       U.mount(el,
         U.pageHead(this),
         h('div', { class: 'picker' },
-          U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v, v: null, bass: null }) }),
-          U.typePicker({ value: typeId, onChange: (v) => ctx.update({ type: v, v: null, bass: null }) })),
-
-        h('div', { class: 'chordhero' },
-          h('div', { class: 'ch-name' },
+          U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v, v: null, bass: null, all: null }) }),
+          U.typePicker({ value: typeId, onChange: (v) => ctx.update({ type: v, v: null, bass: null, all: null }) })),
+        U.renderSections(this, {
+          chord: () => h('div', { class: 'hero-block' },
             h('div', { class: 'ch-big' }, U.chordName(ch.rootName, ch.type.sym + (bassName ? '/' + bassName : ''))),
-            h('div', { class: 'ch-long' }, T.fmt(ch.rootName) + ' ' + ch.type.name.toLowerCase() + (bassName ? ' over ' + T.fmt(bassName) : ''))),
-          h('div', { class: 'ch-theory' },
+            h('div', { class: 'ch-long' }, T.fmt(ch.rootName) + ' ' + ch.type.name.toLowerCase() + (bassName ? ' over ' + T.fmt(bassName) : '')),
             U.formula(ch.names, ch.intervals, { onNote: (i) => A.pluck(48 + root + (root < 4 ? 12 : 0) + T.IV[ch.intervals[i]][0]) }),
             h('div', { class: 'ch-actions' },
               U.button('Play', () => { const v = active || voicings[0]; v && A.strum(v.midis); }, { kind: 'primary', icon: 'play', fk: 'strum' }),
-              U.button(null, () => { const v = active || voicings[0]; v && A.sequence(v.midis.filter((m) => m != null), { step: 0.16 }); }, { kind: 'quiet', icon: 'arp', title: 'Arpeggio' }),
-              h('a', { class: 'textlink', href: GA.href('chordscales', { root, type: typeId }) }, 'Scales that fit →')),
-            GA.settings.get('piano') ? R.piano({ pcs: ch.pcs, rootPc: root, names }) : null)),
-
-        U.section('Shapes', [
-          voicings.length ? h('div', { class: 'voicings' }, voicings.slice(0, limit).map((v, i) => h('button', {
-            type: 'button', class: ['vcard', sel === i ? 'on' : ''], 'data-fk': 'v' + i,
-            onclick: () => { A.strum(v.midis); ctx.update({ v: sel === i ? null : i }); },
-            title: 'Play and show on the neck',
-          }, R.chordDiagram(v, { rootPc: root, names }), h('span', { class: 'vtab' }, V.toText(v.frets)))))
-            : U.empty('No comfortable shape for ' + T.fmt(fullSym) + ' in this tuning. Try allowing inversions below.'),
-          voicings.length > limit ? h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length + ' shapes') : null,
-          U.disclosure('Bass note & inversions', h('div', { class: 'controls-row' },
+              U.button('Arpeggio', () => { const v = active || voicings[0]; v && A.sequence(v.midis.filter((m) => m != null), { step: 0.16 }); }, { kind: 'ghost' }),
+              h('a', { class: 'textlink', href: GA.href('chordscales', { root, type: typeId }) }, 'Scales that fit →'))),
+          shapes: () => [
+            voicings.length ? h('div', { class: 'voicings' }, voicings.slice(0, limit).map((v, i) => h('button', {
+              type: 'button', class: ['vcard', sel === i ? 'on' : ''], 'data-fk': 'v' + i,
+              onclick: () => { A.strum(v.midis); ctx.update({ v: sel === i ? null : i }); },
+              title: 'Play and show on the neck',
+            }, R.chordDiagram(v, { rootPc: root, names }), h('span', { class: 'vtab' }, V.toText(v.frets)))))
+              : U.empty('No comfortable shape for ' + T.fmt(fullSym) + ' in this tuning. Try allowing inversions.'),
+            voicings.length > limit ? h('div', { class: 'center-row' }, h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length + ' shapes')) : null,
+          ],
+          neck,
+          bass: () => h('div', { class: 'controls-row' },
             U.select({ label: 'Bass note', value: bass == null ? '' : bass, fk: 'bass',
               options: [{ value: '', label: 'Root in bass' }].concat([...Array(12).keys()].map((pc) => ({ value: pc, label: '/' + T.fmt(names.get(pc) || U.namePc(pc)) + (names.has(pc) ? '  (chord tone)' : '') }))),
               onChange: (v) => ctx.update({ bass: v === '' ? null : v, v: null }) }),
             U.toggle({ label: 'Allow inversions', checked: inv, fk: 'inv', onChange: (v) => ctx.update({ inv: v ? '1' : null, v: null }) })),
-          { id: 'lib-bass', open: optionsOpen }),
-        ], { aside: h('span', { class: 'block-aside' }, voicings.length + ' found · click to hear') }),
-
-        U.section('On the neck', [
-                    R.fretboard({
-            tuning,
-            mark: (s, f, midi) => {
-              const pc = midi % 12;
-              if (!ivByPc.has(pc)) return null;
-              const iv = ivByPc.get(pc);
-              const lab = GA.settings.get('labels') === 'intervals' ? T.fmt(iv) : T.fmt(names.get(pc));
-              if (active) {
-                if (active.frets[s] === f) return { label: lab, role: T.ivRole(iv) };
-                return { label: '', role: 'ghost' };
-              }
-              return { label: lab, role: T.ivRole(iv) };
-            },
-            onCell: (s, f, midi) => A.pluck(midi),
-            highlightFrets: active ? [active.minFret || 0, Math.max(active.maxFret, (active.minFret || 1) + 3)] : null,
-          }),
-          labelLegend(),
-        ]),
+          piano: () => R.piano({ pcs: ch.pcs, rootPc: root, names }),
+        }, {
+          shapes: () => h('span', { class: 'block-aside' }, voicings.length + ' found'),
+        }),
       );
     },
   });

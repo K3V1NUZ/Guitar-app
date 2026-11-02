@@ -127,6 +127,12 @@
     short: 'Write, transpose and play back.',
     blurb: 'Write chord progressions by Roman numeral, transpose them instantly and play them back with a strum pattern.',
     keywords: 'chord progression song writer playback loop backing',
+    sections: [
+      { id: 'progression', title: 'Progression' },
+      { id: 'playback', title: 'Playback' },
+      { id: 'add', title: 'Add a chord' },
+      { id: 'saved', title: 'Saved progressions' },
+    ],
     render(el, p) {
       if (p.root != null) { state.root = T.mod(+p.root); }
       if (p.scale === 'minor' || p.scale === 'major') {
@@ -159,23 +165,17 @@
         el.replaceChildren();
         U.mount(el,
           U.pageHead(view),
-          h('div', { class: 'controls' },
-            U.rootPicker({ value: state.root, label: 'Key', onChange: (v) => { state.root = v; save(); stop(); draw(); } }),
-            h('div', { class: 'controls-row' },
-              U.seg({ label: 'Mode', value: state.mode, fk: 'pmode', options: [{ value: 'major', label: 'Major' }, { value: 'minor', label: 'Minor' }], onChange: (v) => { state.mode = v; state.chords = PRESETS[v][0][2].slice(); save(); stop(); draw(); } }),
-              U.select({ label: 'Start from a classic', value: '', fk: 'preset', options: [{ value: '', label: 'Choose…' }].concat(PRESETS[state.mode].map((x, i) => ({ value: i, label: x[0] + ' — ' + x[1] }))), onChange: (v) => { if (v === '') return; state.chords = PRESETS[state.mode][+v][2].slice(); save(); stop(); draw(); } }))),
+          h('div', { class: 'picker' },
+            U.rootPicker({ value: state.root, onChange: (v) => { state.root = v; save(); stop(); draw(); } }),
+            h('div', { class: 'controls-row center-row' },
+              U.seg({ value: state.mode, fk: 'pmode', options: [{ value: 'major', label: 'Major' }, { value: 'minor', label: 'Minor' }], onChange: (v) => { state.mode = v; state.chords = PRESETS[v][0][2].slice(); save(); stop(); draw(); } }),
+              U.select({ value: '', fk: 'preset', options: [{ value: '', label: 'Start from a classic…' }].concat(PRESETS[state.mode].map((x, i) => ({ value: i, label: x[0] + ' — ' + x[1] }))), onChange: (v) => { if (v === '') return; state.chords = PRESETS[state.mode][+v][2].slice(); save(); stop(); draw(); } }))),
 
-          h('div', { class: 'prog-head' },
-            h('h2', { class: 'sh-name' }, 'In ', h('span', { class: 'cn-root' }, T.fmt(keyName)), ' ', state.mode),
-            h('div', { class: 'prog-transport' },
-              U.button('Play', () => (player ? stop() : play(voicings)), { kind: 'primary', icon: 'play', fk: 'pplay' }),
-              h('label', { class: 'field field-inline' }, h('span', { class: 'label' }, 'BPM'),
-                h('input', { type: 'number', min: 40, max: 220, value: state.bpm, class: 'textin num', 'data-fk': 'bpm', onchange: (e) => { state.bpm = Math.max(40, Math.min(220, +e.target.value || 90)); save(); if (player) play(voicings); } })),
-              U.select({ label: 'Beats / chord', value: state.beats, fk: 'beats', options: [2, 3, 4, 8].map((b) => ({ value: b, label: String(b) })), onChange: (v) => { state.beats = +v; save(); if (player) play(voicings); } }),
-              U.select({ label: 'Strum', value: state.strum, fk: 'strum', options: STRUMS.map((s) => ({ value: s.id, label: s.name })), onChange: (v) => { state.strum = v; save(); if (player) play(voicings); } }),
-              U.toggle({ label: 'Loop', checked: state.loop, fk: 'loop', onChange: (v) => { state.loop = v; save(); } }),
-              U.toggle({ label: 'Keep shapes close', checked: state.close, fk: 'close', onChange: (v) => { state.close = v; save(); draw(); } }))),
-
+          U.renderSections(view, {
+            progression: () => [
+              h('div', { class: 'prog-head' },
+                h('h2', { class: 'sh-name' }, 'In ', h('span', { class: 'cn-root' }, T.fmt(keyName)), ' ', state.mode),
+                U.button('Play', () => (player ? stop() : play(voicings)), { kind: 'primary', icon: 'play', fk: 'pplay' })),
           state.chords.length ? h('div', { class: 'progression' }, state.chords.map((c, i) => {
             const ch = chordAt(i);
             const nm = nameOf(ch);
@@ -191,7 +191,6 @@
                 h('button', { type: 'button', class: 'iconbtn sm', title: 'Remove', onclick: () => { state.chords.splice(i, 1); save(); stop(); draw(); } }, U.icon('trash', 15)),
                 h('button', { type: 'button', class: 'iconbtn sm', title: 'Move right', disabled: i === state.chords.length - 1, onclick: () => { [state.chords[i + 1], state.chords[i]] = [state.chords[i], state.chords[i + 1]]; save(); draw(); } }, U.icon('right', 15))));
           })) : U.empty('Empty. Add chords from the palette below or pick a classic progression.'),
-
           h('div', { class: 'controls-row' },
             U.button('Clear', () => { state.chords = []; save(); stop(); draw(); }, { kind: 'ghost', icon: 'trash' }),
             U.button('Copy as text', () => {
@@ -204,18 +203,26 @@
               state.saved.unshift({ name, root: state.root, mode: state.mode, chords: state.chords.slice() });
               save(); draw(); U.toast('Saved');
             }, { kind: 'ghost', icon: 'heart' })),
-
-          U.section('Add a chord', [
+            ],
+            playback: () =>
+            h('div', { class: 'prog-transport' },
+              h('label', { class: 'field field-inline' }, h('span', { class: 'label' }, 'BPM'),
+                h('input', { type: 'number', min: 40, max: 220, value: state.bpm, class: 'textin num', 'data-fk': 'bpm', onchange: (e) => { state.bpm = Math.max(40, Math.min(220, +e.target.value || 90)); save(); if (player) play(voicings); } })),
+              U.select({ label: 'Beats / chord', value: state.beats, fk: 'beats', options: [2, 3, 4, 8].map((b) => ({ value: b, label: String(b) })), onChange: (v) => { state.beats = +v; save(); if (player) play(voicings); } }),
+              U.select({ label: 'Strum', value: state.strum, fk: 'strum', options: STRUMS.map((s) => ({ value: s.id, label: s.name })), onChange: (v) => { state.strum = v; save(); if (player) play(voicings); } }),
+              U.toggle({ label: 'Loop', checked: state.loop, fk: 'loop', onChange: (v) => { state.loop = v; save(); } }),
+              U.toggle({ label: 'Keep shapes close', checked: state.close, fk: 'close', onChange: (v) => { state.close = v; save(); draw(); } })),
+            add: () => [
             h('div', { class: 'label' }, 'Diatonic'),
             h('div', { class: 'palette-grid' }, diatonic.map((pair) => h('div', { class: 'palette-col' }, pair.map((t) => h('button', { type: 'button', class: 'pchip', onclick: () => add(t) }, tokLabel(t)))))),
             h('div', { class: 'label' }, state.mode === 'major' ? 'Borrowed & secondary' : 'Harmonic & borrowed'),
             h('div', { class: 'chips' }, borrowed.map((t) => h('button', { type: 'button', class: 'pchip', onclick: () => add(t) }, tokLabel(t)))),
-          ]),
-
-          state.saved.length ? U.section('Saved progressions', h('div', { class: 'savedlist' }, state.saved.map((sv, i) => h('div', { class: 'saved' },
+          ],
+            saved: () => (state.saved.length ? h('div', { class: 'savedlist' }, state.saved.map((sv, i) => h('div', { class: 'saved' },
             h('button', { type: 'button', class: 'saved-load', onclick: () => { Object.assign(state, { root: sv.root, mode: sv.mode, chords: sv.chords.slice() }); save(); stop(); draw(); } },
               h('b', null, sv.name), h('span', null, T.fmt(T.scale(sv.root, sv.mode, U.pref()).rootName) + ' ' + sv.mode + ' · ' + sv.chords.length + ' chords')),
-            h('button', { type: 'button', class: 'iconbtn sm', title: 'Delete', onclick: () => { state.saved.splice(i, 1); save(); draw(); } }, U.icon('trash', 15)))))) : null,
+            h('button', { type: 'button', class: 'iconbtn sm', title: 'Delete', onclick: () => { state.saved.splice(i, 1); save(); draw(); } }, U.icon('trash', 15))))) : null),
+          }),
         );
         if (player) { const b = el.querySelector('[data-fk="pplay"]'); if (b) b.replaceChildren(U.icon('stop'), h('span', null, 'Stop')); }
       };

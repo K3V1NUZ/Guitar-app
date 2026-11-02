@@ -104,6 +104,11 @@ Every scale a place to go`;
     short: 'Change key, find the best capo.',
     blurb: 'Paste a chord sheet, shift it to any key, and find the capo position with the easiest shapes.',
     keywords: 'transpose key change capo chord sheet lyrics song',
+    sections: [
+      { id: 'sheet', title: 'Chord sheet' },
+      { id: 'capo', title: 'Capo helper' },
+      { id: 'chords', title: 'Chords used' },
+    ],
     render(el, p, ctx) {
       const text = U.storage.get('sheet', SAMPLE);
       const semis = p.t != null ? +p.t : 0;
@@ -136,7 +141,7 @@ Every scale a place to go`;
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'tp-bar' },
+        h('div', { class: 'tp-bar picker-row' },
           h('div', { class: 'field' }, h('div', { class: 'label' }, 'Transpose'),
             h('div', { class: 'stepper' },
               h('button', { type: 'button', class: 'iconbtn', 'aria-label': 'Down a semitone', 'data-fk': 'tdown', onclick: () => ctx.update({ t: semis - 1 <= -12 ? 0 : semis - 1 }) }, '−'),
@@ -145,25 +150,28 @@ Every scale a place to go`;
           U.seg({ label: 'Spelling', value: pref, fk: 'acc', options: [{ value: 'auto', label: 'Auto' }, { value: 'sharp', label: '♯' }, { value: 'flat', label: '♭' }], onChange: (v) => ctx.update({ acc: v === 'auto' ? null : v }) }),
           key0 ? h('div', { class: 'tp-key' }, h('span', { class: 'label' }, 'Key'), h('b', null, T.fmt(key0.name) + (key0.sid === 'minor' ? 'm' : '')), semis ? [' → ', h('b', { class: 'accent' }, T.fmt(key1.name) + (key1.sid === 'minor' ? 'm' : ''))] : null) : null,
           U.button('Reset', () => ctx.update({ t: null }), { kind: 'ghost' })),
+        U.renderSections(this, {
+          sheet: () =>
         h('div', { class: 'tp-grid' },
           h('div', null, h('div', { class: 'label' }, 'Your chord sheet (chord lines above lyrics, or inline [C] brackets)'), editor,
             h('div', { class: 'controls-row' }, U.button('Load example', () => { U.storage.set('sheet', SAMPLE); GA.rerender(); }, { kind: 'ghost' }), U.button('Clear', () => { U.storage.set('sheet', ''); GA.rerender(); }, { kind: 'ghost' }))),
           h('div', null, h('div', { class: 'label' }, semis ? 'Transposed ' + (semis > 0 ? 'up ' : 'down ') + Math.abs(semis) + ' semitone' + (Math.abs(semis) > 1 ? 's' : '') : 'Preview'),
             h('pre', { class: 'sheet-out mono' }, lines.map((ln) => h('div', { class: 'sl sl-' + ln.type }, ln.parts ? ln.parts.map((pt) => (pt.chord ? h('a', { class: 'sc', href: chordHref(pt.text) }, T.fmt(pt.text)) : pt.text)) : (ln.text || ' ')))))),
-        shifted.length ? U.section('Capo helper', [
+          capo: () => (shifted.length ? [
           h('p', { class: 'note' }, 'Same sound, different shapes. Capo positions ranked by how many chords become easy open shapes.' + (bestCapo.c ? ' Best: capo ' + bestCapo.c + '.' : '')),
           h('div', { class: 'capotable' }, capos.map((cp) => h('div', { class: ['caporow', cp === bestCapo ? 'best' : ''] },
             h('span', { class: 'capo-n' }, cp.c ? 'Capo ' + cp.c : 'No capo'),
             h('span', { class: 'capo-shapes' }, cp.shapes.map((s) => h('span', { class: EASY.has((s || '').replace(/\/.*/, '')) ? 'easy' : OK.has((s || '').replace(/\/.*/, '')) ? 'ok' : 'hard' }, T.fmt(s)))),
             h('span', { class: 'capo-score mono' }, cp.easy + '/' + shifted.length + ' easy')))),
-        ]) : null,
-        shifted.length ? U.section('Chords used', h('div', { class: 'cardrow' }, shifted.slice(0, 16).map((sym) => {
+        ] : null),
+          chords: () => (shifted.length ? h('div', { class: 'cardrow' }, shifted.slice(0, 16).map((sym) => {
           const pc = T.parseChord(sym);
           if (!pc) return null;
           const v = V.best(pc.rootPc, pc.typeId, tuning, pc.bassPc != null && pc.bassPc !== pc.rootPc ? { bassPc: pc.bassPc } : {}) || V.best(pc.rootPc, pc.typeId, tuning);
           const ch = T.chord(pc.rootPc, pc.typeId, U.pref());
           return R.chordCard({ rootPc: pc.rootPc, typeId: pc.typeId, voicing: v, compact: true, title: h('a', { href: chordHref(sym), class: 'ccard-name' }, U.chordName(sym.slice(0, pc.rootName.length), sym.slice(pc.rootName.length))), names: new Map(ch.pcs.map((x, i) => [x, ch.names[i]])) });
-        }))) : null,
+        })) : null),
+        }),
       );
     },
   });

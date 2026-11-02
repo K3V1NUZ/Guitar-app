@@ -25,6 +25,13 @@
     short: 'Any scale, anywhere on the neck.',
     blurb: T.SCALES.length + ' scales and modes mapped across the neck, with positions, step patterns and playback.',
     keywords: 'scales modes pentatonic blues fretboard positions boxes',
+    sections: [
+      { id: 'scale', title: 'Scale' },
+      { id: 'neck', title: 'On the neck' },
+      { id: 'related', title: 'Related scales' },
+      { id: 'modes', title: 'Modes of this scale', collapsed: true },
+      { id: 'piano', title: 'Piano keyboard', hidden: true },
+    ],
     render(el, p, ctx) {
       const root = p.root != null ? +p.root : 9;
       const id = T.SCALE_BY_ID[p.scale] ? p.scale : 'minpent';
@@ -63,8 +70,8 @@
         h('div', { class: 'picker' },
           U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v, pos: null }) }),
           U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v, pos: null }), fk: 'scale', wide: true })),
-        h('div', { class: 'scalehero' },
-          h('div', { class: 'sh-left' },
+        U.renderSections(this, {
+          scale: () => h('div', { class: 'hero-block' },
             h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
             sc.type.aka ? h('div', { class: 'ch-long' }, 'also ' + sc.type.aka) : null,
             U.formula(sc.names, sc.intervals, { onNote: (i) => A.pluck(48 + root + (root < 4 ? 12 : 0) + sc.type.pcs[i]) }),
@@ -74,40 +81,38 @@
               U.button(null, () => play('up'), { icon: 'up', kind: 'quiet', title: 'Ascend' }),
               U.button(null, () => play('down'), { icon: 'down', kind: 'quiet', title: 'Descend' }),
               h('a', { class: 'textlink', href: GA.href('harmonize', { root, scale: id }) }, 'Chords in this scale →'))),
-          h('div', { class: 'sh-right' },
-            GA.settings.get('piano') ? R.piano({ pcs: sc.pcs, rootPc: root, names }) : null,
-            rel.length ? h('div', { class: 'related' }, rel.map((r) => h('a', { class: 'rel', href: GA.href('scales', { root: r.root, scale: r.id }) }, h('span', null, r.label), h('b', null, T.fmt(T.scale(r.root, r.id, U.pref()).rootName) + ' ' + T.SCALE_BY_ID[r.id].name)))) : null)),
-
-        U.section('On the neck', [
-          h('div', { class: 'controls-row' },
-            U.seg({ label: 'Position', small: true, value: String(pos), fk: 'pos',
-              options: [{ value: '-1', label: 'Whole neck' }].concat(positions.map((f, i) => ({ value: String(i), label: 'P' + (i + 1), title: 'Starting around fret ' + f }))),
-              onChange: (v) => ctx.update({ pos: v === '-1' ? null : v }) }),
-            U.seg({ label: 'Colour', small: true, value: colorBy, fk: 'col', options: [{ value: 'root', label: 'Root only' }, { value: 'iv', label: 'By interval' }], onChange: (v) => ctx.update({ color: v === 'iv' ? 'iv' : null }) }),
-            U.seg({ label: 'Labels', small: true, value: GA.settings.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => GA.settings.set('labels', v) })),
-          R.fretboard({
-            tuning, frets: N,
-            highlightFrets: win,
-            mark: (s, f, midi) => {
-              const pc = midi % 12;
-              if (!ivs.has(pc)) return null;
-              const iv = ivs.get(pc);
-              const inWin = !win || (f >= win[0] && f <= win[1]);
-              const label = GA.settings.get('labels') === 'intervals' ? T.fmt(iv) : T.fmt(names.get(pc));
-              const role = iv === '1' ? 'root' : colorBy === 'iv' ? T.ivRole(iv) : 'plain';
-              return inWin ? { label, role } : { label: '', role: 'ghost' };
-            },
-            onCell: (s, f, midi) => { if (ivs.has(midi % 12)) A.pluck(midi); },
-          }),
-        ]),
-
-        modesOf(root, id).length ? U.disclosure('Modes of this scale', h('div', { class: 'modes' }, modesOf(root, id).map((m) => {
-          const ms = T.scale(m.rootPc, m.typeId, U.pref());
-          return h('a', { class: 'mode', href: GA.href('scales', { root: m.rootPc, scale: m.typeId }) },
-            h('span', { class: 'mode-deg' }, 'from degree ' + m.degree),
-            h('span', { class: 'mode-name' }, T.fmt(ms.rootName) + ' ' + ms.type.name),
-            h('span', { class: 'mode-notes' }, ms.names.map(T.fmt).join(' ')));
-        })), { id: 'modes' }) : null,
+          neck: () => [
+            h('div', { class: 'controls-row center-row' },
+              U.seg({ small: true, value: String(pos), fk: 'pos',
+                options: [{ value: '-1', label: 'Whole neck' }].concat(positions.map((f, i) => ({ value: String(i), label: 'P' + (i + 1), title: 'Starting around fret ' + f }))),
+                onChange: (v) => ctx.update({ pos: v === '-1' ? null : v }) }),
+              U.seg({ small: true, value: colorBy, fk: 'col', options: [{ value: 'root', label: 'Root only' }, { value: 'iv', label: 'By interval' }], onChange: (v) => ctx.update({ color: v === 'iv' ? 'iv' : null }) }),
+              U.seg({ small: true, value: GA.settings.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => GA.settings.set('labels', v) })),
+            R.fretboard({
+              tuning, frets: N,
+              highlightFrets: win,
+              mark: (s, f, midi) => {
+                const pc = midi % 12;
+                if (!ivs.has(pc)) return null;
+                const iv = ivs.get(pc);
+                const inWin = !win || (f >= win[0] && f <= win[1]);
+                const label = GA.settings.get('labels') === 'intervals' ? T.fmt(iv) : T.fmt(names.get(pc));
+                const role = iv === '1' ? 'root' : colorBy === 'iv' ? T.ivRole(iv) : 'plain';
+                return inWin ? { label, role } : { label: '', role: 'ghost' };
+              },
+              onCell: (s, f, midi) => { if (ivs.has(midi % 12)) A.pluck(midi); },
+            }),
+          ],
+          related: () => (rel.length ? h('div', { class: 'related' }, rel.map((r) => h('a', { class: 'rel', href: GA.href('scales', { root: r.root, scale: r.id }) }, h('span', null, r.label), h('b', null, T.fmt(T.scale(r.root, r.id, U.pref()).rootName) + ' ' + T.SCALE_BY_ID[r.id].name)))) : null),
+          modes: () => (modesOf(root, id).length ? h('div', { class: 'modes' }, modesOf(root, id).map((m) => {
+            const ms = T.scale(m.rootPc, m.typeId, U.pref());
+            return h('a', { class: 'mode', href: GA.href('scales', { root: m.rootPc, scale: m.typeId }) },
+              h('span', { class: 'mode-deg' }, 'from degree ' + m.degree),
+              h('span', { class: 'mode-name' }, T.fmt(ms.rootName) + ' ' + ms.type.name),
+              h('span', { class: 'mode-notes' }, ms.names.map(T.fmt).join(' ')));
+          })) : null),
+          piano: () => R.piano({ pcs: sc.pcs, rootPc: root, names }),
+        }),
       );
     },
   });

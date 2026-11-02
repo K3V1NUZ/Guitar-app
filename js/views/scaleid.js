@@ -11,6 +11,11 @@
     short: 'Find scales that contain your notes.',
     blurb: 'Enter the notes of a riff or melody and find every scale and mode that contains them.',
     keywords: 'scale finder what scale which key detect',
+    sections: [
+      { id: 'input', title: 'Your notes' },
+      { id: 'exact', title: 'Exact matches' },
+      { id: 'contains', title: 'Scales containing these notes' },
+    ],
     render(el, p, ctx) {
       const tuning = GA.settings.tuning().notes;
       const picked = new Set((p.n || '').split(',').filter((x) => x !== '').map(Number));
@@ -39,26 +44,30 @@
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'controls' },
-          U.seg({ value: mode, fk: 'mode', options: [{ value: 'notes', label: 'Pick notes' }, { value: 'neck', label: 'Tap the fretboard' }], onChange: (v) => ctx.update({ m: v === 'neck' ? 'neck' : null }) }),
-          mode === 'notes'
-            ? U.noteToggles({ selected: picked, rootPc: rootSel, onToggle: (pc) => toggle(pc) })
-            : R.fretboard({ tuning, onCell: (s, f, midi) => toggle(midi % 12, midi),
-              mark: (s, f, midi) => (picked.has(midi % 12) ? { label: T.fmt(U.namePc(midi % 12)), role: midi % 12 === rootSel ? 'root' : 'plain' } : null) }),
-          h('div', { class: 'controls-row' },
-            U.select({ label: 'Tonal centre', value: rootSel == null ? '' : rootSel, fk: 'rsel',
-              options: [{ value: '', label: 'Any root' }].concat([...Array(12).keys()].map((pc) => ({ value: pc, label: T.fmt(U.namePc(pc)) + (picked.has(pc) ? '' : '  (not in your notes)') }))),
-              onChange: (v) => ctx.update({ r: v === '' ? null : v }) }),
-            U.button('Clear', () => ctx.update({ n: null, r: null }), { icon: 'x', kind: 'ghost' }),
-            h('span', { class: 'hint' }, pcs.length ? pcs.length + ' note' + (pcs.length > 1 ? 's' : '') + ' selected' : 'Select at least two notes'))),
-
-        !pcs.length ? U.empty('Pick some notes to begin.') : [
-          U.section('Exact matches', exact.length ? h('div', { class: 'scards' }, exact.slice(0, 24).map(card)) : U.empty('No scale in the library has exactly these notes — see the closest ones below.'), { aside: h('span', { class: 'block-aside' }, exact.length + ' found') }),
-          U.section('Scales containing these notes', contains.length ? [
+        h('div', { class: 'picker' },
+          U.seg({ value: mode, fk: 'mode', options: [{ value: 'notes', label: 'Pick notes' }, { value: 'neck', label: 'Tap the fretboard' }], onChange: (v) => ctx.update({ m: v === 'neck' ? 'neck' : null }) })),
+        U.renderSections(this, {
+          input: () => [
+            mode === 'notes'
+              ? U.noteToggles({ selected: picked, rootPc: rootSel, onToggle: (pc) => toggle(pc) })
+              : R.fretboard({ tuning, onCell: (s, f, midi) => toggle(midi % 12, midi),
+                mark: (s, f, midi) => (picked.has(midi % 12) ? { label: T.fmt(U.namePc(midi % 12)), role: midi % 12 === rootSel ? 'root' : 'plain' } : null) }),
+            h('div', { class: 'controls-row' },
+              U.select({ label: 'Tonal centre', value: rootSel == null ? '' : rootSel, fk: 'rsel',
+                options: [{ value: '', label: 'Any root' }].concat([...Array(12).keys()].map((pc) => ({ value: pc, label: T.fmt(U.namePc(pc)) + (picked.has(pc) ? '' : '  (not in your notes)') }))),
+                onChange: (v) => ctx.update({ r: v === '' ? null : v }) }),
+              pcs.length ? U.button('Clear', () => ctx.update({ n: null, r: null }), { kind: 'ghost' }) : null,
+              h('span', { class: 'hint' }, pcs.length ? pcs.length + ' note' + (pcs.length > 1 ? 's' : '') + ' selected' : 'Select at least two notes')),
+          ],
+          exact: () => (!pcs.length ? h('p', { class: 'note muted' }, 'Pick some notes to begin.') : exact.length ? h('div', { class: 'scards' }, exact.slice(0, 24).map(card)) : h('p', { class: 'note muted' }, 'No scale has exactly these notes — see the larger ones.')),
+          contains: () => (!pcs.length ? null : contains.length ? [
             h('div', { class: 'scards' }, contains.slice(0, showAll ? 120 : 18).map(card)),
-            contains.length > 18 && !showAll ? U.button('Show all ' + contains.length, () => ctx.update({ all: '1' }), { kind: 'ghost' }) : null,
-          ] : U.empty('No larger scales contain these notes.'), { aside: h('span', { class: 'block-aside' }, contains.length + ' found') }),
-        ],
+            contains.length > 18 && !showAll ? h('div', { class: 'center-row' }, h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + contains.length)) : null,
+          ] : h('p', { class: 'note muted' }, 'No larger scales contain these notes.')),
+        }, {
+          exact: () => (pcs.length ? h('span', { class: 'block-aside' }, exact.length + ' found') : null),
+          contains: () => h('span', { class: 'block-aside' }, contains.length + ' found'),
+        }),
       );
     },
   });

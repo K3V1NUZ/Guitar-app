@@ -63,7 +63,7 @@
       update: (patch) => GA.go(view.id, Object.assign({}, params, patch), { replace: true }),
       go: GA.go,
     };
-    const frag = h('div', { class: 'view view-' + view.id });
+    const frag = h('div', { class: 'view view-' + view.id + (changedView ? ' view-enter' : '') });
     try {
       const res = view.render(frag, params, ctx);
       if (typeof res === 'function') cleanup = res;
@@ -168,6 +168,7 @@
   }
 
   /* ---------- Settings drawer ---------- */
+  let layoutView = null;
   function buildSettings() {
     const panel = h('aside', { class: 'settings', id: 'settings', 'aria-label': 'Settings' });
     const draw = () => {
@@ -184,13 +185,24 @@
             U.seg({ label: 'Theme', value: t.theme, options: [{ value: 'auto', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }], onChange: (v) => S.set('theme', v) }),
             U.seg({ label: 'Chord diagram labels', value: t.diagramLabel, options: [{ value: 'fingers', label: 'Fingers' }, { value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => S.set('diagramLabel', v) }),
             U.seg({ label: 'Accidentals', value: t.pref, options: [{ value: 'auto', label: 'Auto' }, { value: 'sharp', label: '♯' }, { value: 'flat', label: '♭' }], onChange: (v) => S.set('pref', v) }),
-            U.toggle({ label: 'Show piano keyboard', checked: t.piano, onChange: (v) => S.set('piano', v) })),
+          ),
+          layoutGroup(),
           h('section', { class: 'set-group' }, h('h3', null, 'Sound'),
             U.toggle({ label: 'Play sounds', checked: t.sound, onChange: (v) => S.set('sound', v) }),
             h('input', { type: 'range', min: 0, max: 1, step: 0.05, value: t.volume, class: 'range', 'aria-label': 'Volume', oninput: (e) => { S.set('volume', +e.target.value); GA.Audio.setVolume(+e.target.value); } })),
           h('p', { class: 'settings-note' }, 'Saved on this device. Works without a connection — use your browser’s Install option to keep it as an app.'),
         ));
     };
+    function layoutGroup() {
+      const views = GA.views.filter((v) => v.sections && v.sections.length);
+      if (!layoutView || !views.find((v) => v.id === layoutView)) layoutView = (views.find((v) => v.id === current.id) || views[0]).id;
+      const view = views.find((v) => v.id === layoutView);
+      return h('section', { class: 'set-group', id: 'layoutGroup' }, h('h3', null, 'Page layout'),
+        h('p', { class: 'settings-note' }, 'Drag sections to reorder them, or move them to Hidden.'),
+        U.select({ label: 'Page', value: layoutView, fk: 'laypage', options: views.map((v) => ({ value: v.id, label: v.title })), onChange: (v) => { layoutView = v; draw(); } }),
+        U.layoutEditor(view, () => { if (current.id === view.id) render(); draw(); }));
+    }
+    GA.redrawSettings = (viewId) => { if (viewId) layoutView = viewId; draw(); };
     draw();
     S.on((k) => {
       if (k === 'volume') return;
@@ -202,7 +214,12 @@
     });
     return panel;
   }
-  function openSettings() { document.body.classList.add('settings-open'); setTimeout(() => { const f = document.querySelector('#settings select'); f && f.focus(); }, 50); }
+  GA.openLayout = (viewId) => {
+    GA.redrawSettings(viewId);
+    document.body.classList.add('settings-open');
+    setTimeout(() => { const g = document.getElementById('layoutGroup'); if (g) g.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
+  };
+  function openSettings() { GA.redrawSettings(current.id); document.body.classList.add('settings-open'); }
   function closeSettings() { document.body.classList.remove('settings-open'); }
   GA.openSettings = openSettings;
 
