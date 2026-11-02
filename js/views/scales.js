@@ -22,6 +22,7 @@
     num: '03',
     group: 'Look up',
     title: 'Scale Explorer',
+    short: 'Any scale, anywhere on the neck.',
     blurb: T.SCALES.length + ' scales and modes mapped across the neck, with positions, step patterns and playback.',
     keywords: 'scales modes pentatonic blues fretboard positions boxes',
     render(el, p, ctx) {
@@ -59,23 +60,23 @@
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'controls' },
+        h('div', { class: 'picker' },
           U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v, pos: null }) }),
-          h('div', { class: 'controls-row' },
-            U.select({ label: 'Scale', value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v, pos: null }), fk: 'scale', wide: true }))),
+          U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v, pos: null }), fk: 'scale', wide: true })),
         h('div', { class: 'scalehero' },
           h('div', { class: 'sh-left' },
             h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
-            sc.type.aka ? h('div', { class: 'ch-alias' }, 'Also known as ' + sc.type.aka) : null,
+            sc.type.aka ? h('div', { class: 'ch-long' }, 'also ' + sc.type.aka) : null,
             U.formula(sc.names, sc.intervals, { onNote: (i) => A.pluck(48 + root + (root < 4 ? 12 : 0) + sc.type.pcs[i]) }),
-            h('div', { class: 'steps' }, h('span', { class: 'label' }, 'Steps'), steps.map((s) => h('span', { class: 'step' }, s))),
+            h('div', { class: 'steps', title: 'Steps between notes (W = whole, H = half)' }, steps.join(' · ')),
             h('div', { class: 'ch-actions' },
-              U.button('Ascend', () => play('up'), { icon: 'up', kind: 'primary' }),
-              U.button('Descend', () => play('down'), { icon: 'down', kind: 'ghost' }),
-              U.button('Up & down', () => play('both'), { icon: 'loop', kind: 'ghost' }),
-              U.button('Chords in this scale', () => GA.go('harmonize', { root, scale: id }), { icon: 'right', kind: 'ghost' }))),
-          h('div', { class: 'sh-right' }, R.piano({ pcs: sc.pcs, rootPc: root, names }),
-            rel.length ? h('div', { class: 'related' }, h('div', { class: 'label' }, 'Related'), rel.map((r) => h('a', { class: 'rel', href: GA.href('scales', { root: r.root, scale: r.id }) }, h('span', null, r.label), h('b', null, T.fmt(T.scale(r.root, r.id, U.pref()).rootName) + ' ' + T.SCALE_BY_ID[r.id].name)))) : null)),
+              U.button('Play', () => play('both'), { icon: 'play', kind: 'primary' }),
+              U.button(null, () => play('up'), { icon: 'up', kind: 'quiet', title: 'Ascend' }),
+              U.button(null, () => play('down'), { icon: 'down', kind: 'quiet', title: 'Descend' }),
+              h('a', { class: 'textlink', href: GA.href('harmonize', { root, scale: id }) }, 'Chords in this scale →'))),
+          h('div', { class: 'sh-right' },
+            GA.settings.get('piano') ? R.piano({ pcs: sc.pcs, rootPc: root, names }) : null,
+            rel.length ? h('div', { class: 'related' }, rel.map((r) => h('a', { class: 'rel', href: GA.href('scales', { root: r.root, scale: r.id }) }, h('span', null, r.label), h('b', null, T.fmt(T.scale(r.root, r.id, U.pref()).rootName) + ' ' + T.SCALE_BY_ID[r.id].name)))) : null)),
 
         U.section('On the neck', [
           h('div', { class: 'controls-row' },
@@ -100,13 +101,13 @@
           }),
         ]),
 
-        modesOf(root, id).length ? U.section('Modes of this scale', h('div', { class: 'modes' }, modesOf(root, id).map((m) => {
+        modesOf(root, id).length ? U.disclosure('Modes of this scale', h('div', { class: 'modes' }, modesOf(root, id).map((m) => {
           const ms = T.scale(m.rootPc, m.typeId, U.pref());
           return h('a', { class: 'mode', href: GA.href('scales', { root: m.rootPc, scale: m.typeId }) },
             h('span', { class: 'mode-deg' }, 'from degree ' + m.degree),
             h('span', { class: 'mode-name' }, T.fmt(ms.rootName) + ' ' + ms.type.name),
             h('span', { class: 'mode-notes' }, ms.names.map(T.fmt).join(' ')));
-        }))) : null,
+        })), { id: 'modes' }) : null,
       );
     },
   });

@@ -48,7 +48,7 @@
   /* ---------- Settings ---------- */
   const DEFAULTS = {
     tuning: 'standard', lefty: false, labels: 'notes', pref: 'auto', theme: 'auto',
-    frets: 15, volume: 0.8, sound: true, diagramLabel: 'fingers', strum: 'down',
+    frets: 15, volume: 0.8, sound: true, diagramLabel: 'fingers', strum: 'down', piano: false,
   };
   const store = (() => {
     try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fretbook.settings') || '{}')); }
@@ -85,23 +85,52 @@
       sym ? h('span', { class: 'cn-sym' }, T.fmt(sym)) : null);
   };
 
-  /** A 12-key root picker shaped like a piano octave. */
-  U.rootPicker = function ({ value, onChange, label = 'Root', fk = 'root' }) {
+  const COMMON_ROOTS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  /** Display name for a root button, honouring the accidental preference. */
+  U.rootLabel = (pc) => {
+    const p = GA.settings.get('pref');
+    return T.fmt(p === 'sharp' ? T.SHARP[pc] : p === 'flat' ? T.FLAT[pc] : COMMON_ROOTS[pc]);
+  };
+
+  /** Root picker: a quiet row of twelve note names. */
+  U.rootPicker = function ({ value, onChange, label, fk = 'root' }) {
     const keys = [];
     for (let pc = 0; pc < 12; pc++) {
-      const black = T.isBlack(pc);
       keys.push(h('button', {
-        class: ['rk', black ? 'rk-b' : 'rk-w', pc === value ? 'on' : ''],
+        class: ['rk', T.isBlack(pc) ? 'rk-acc' : '', pc === value ? 'on' : ''],
         type: 'button',
         'aria-pressed': pc === value ? 'true' : 'false',
         'data-fk': fk + pc,
-        title: black ? T.fmt(T.SHARP[pc] + ' / ' + T.FLAT[pc]) : T.SHARP[pc],
+        title: T.isBlack(pc) ? T.fmt(T.SHARP[pc] + ' / ' + T.FLAT[pc]) : T.SHARP[pc],
         onclick: () => onChange(pc),
-      }, black
-        ? [h('span', null, T.fmt(T.SHARP[pc])), h('span', null, T.fmt(T.FLAT[pc]))]
-        : h('span', null, T.SHARP[pc])));
+      }, U.rootLabel(pc)));
     }
-    return h('div', { class: 'field' }, label ? h('div', { class: 'label' }, label) : null, h('div', { class: 'rootpicker', role: 'group', 'aria-label': label }, keys));
+    const row = h('div', { class: 'rootpicker', role: 'group', 'aria-label': label || 'Root' }, keys);
+    return label ? h('div', { class: 'field' }, h('div', { class: 'label' }, label), row) : row;
+  };
+
+  /** Chord-type picker: the everyday types as chips, everything else behind "More". */
+  const COMMON_TYPES = ['maj', 'min', '7', 'maj7', 'm7', 'sus2', 'sus4', 'dim', 'aug', 'add9', '6', '9'];
+  U.typePicker = function ({ value, onChange, fk = 'type' }) {
+    const isCommon = COMMON_TYPES.includes(value);
+    const sel = h('select', { 'data-fk': fk + '-more', 'aria-label': 'More chord types', class: !isCommon ? 'on' : '', onchange: (e) => e.target.value && onChange(e.target.value) },
+      h('option', { value: '' , selected: isCommon }, 'More…'),
+      T.CHORD_GROUPS.map((g) => h('optgroup', { label: g }, T.CHORDS.filter((c) => c.group === g).map((c) => h('option', { value: c.id, selected: !isCommon && c.id === value }, (c.sym ? T.fmt(c.sym) : 'maj') + '  —  ' + c.name)))));
+    return h('div', { class: 'typepicker', role: 'group', 'aria-label': 'Chord type' },
+      COMMON_TYPES.map((id) => {
+        const c = T.CHORD_BY_ID[id];
+        return h('button', { type: 'button', class: ['chip', id === value ? 'on' : ''], title: c.name, 'aria-pressed': id === value ? 'true' : 'false', 'data-fk': fk + id, onclick: () => onChange(id) }, c.sym ? T.fmt(c.sym) : 'maj');
+      }),
+      h('span', { class: ['selectwrap', 'more', !isCommon ? 'on' : ''] }, sel));
+  };
+
+  /** Collapsible section that remembers whether it was open. */
+  U.disclosure = function (title, kids, opts = {}) {
+    const key = 'open.' + (opts.id || title);
+    const open = U.storage.get(key, !!opts.open);
+    const d = h('details', { class: ['disclosure', opts.cls], open: open || null }, h('summary', null, h('span', null, title), opts.hint ? h('span', { class: 'disc-hint' }, opts.hint) : null), h('div', { class: 'disc-body' }, kids));
+    d.addEventListener('toggle', () => U.storage.set(key, d.open));
+    return d;
   };
 
   /** Segmented control. options: [{value,label,title}] */
@@ -196,10 +225,9 @@
 
   U.pageHead = function (view, extra) {
     return h('header', { class: 'pagehead' },
-      h('div', { class: 'ph-num' }, view.num),
       h('div', { class: 'ph-main' },
         h('h1', null, view.title),
-        view.blurb ? h('p', { class: 'ph-blurb' }, view.blurb) : null),
+        view.blurb ? h('p', { class: 'ph-blurb' }, view.short || view.blurb) : null),
       extra || null);
   };
 

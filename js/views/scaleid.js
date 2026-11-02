@@ -8,6 +8,7 @@
     num: '04',
     group: 'Look up',
     title: 'Scale Identifier',
+    short: 'Find scales that contain your notes.',
     blurb: 'Enter the notes of a riff or melody and find every scale and mode that contains them.',
     keywords: 'scale finder what scale which key detect',
     render(el, p, ctx) {

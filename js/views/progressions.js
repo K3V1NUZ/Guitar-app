@@ -124,6 +124,7 @@
     num: '09',
     group: 'Play',
     title: 'Progression Builder',
+    short: 'Write, transpose and play back.',
     blurb: 'Write chord progressions by Roman numeral, transpose them instantly and play them back with a strum pattern.',
     keywords: 'chord progression song writer playback loop backing',
     render(el, p) {

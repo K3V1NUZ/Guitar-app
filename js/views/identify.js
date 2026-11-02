@@ -18,6 +18,7 @@
     num: '02',
     group: 'Look up',
     title: 'Chord Identifier',
+    short: 'Tap a shape or pick notes to name it.',
     blurb: 'Tap a shape on the neck or pick notes, and get the chord’s name — slash chords and inversions included.',
     keywords: 'name that chord finder what chord is this reverse',
     render(el, p, ctx) {
@@ -58,7 +59,7 @@
 
       const input = mode === 'neck'
         ? [
-          h('p', { class: 'note' }, 'Click a fret to place a finger, click it again to mute that string. Click left of the nut for an open string.'),
+          !pcs.length ? h('p', { class: 'note' }, 'Click a fret to place a finger; click again to mute. Left of the nut is an open string.') : null,
           R.fretboard({
             tuning,
             onCell: (s, f) => {
@@ -74,15 +75,13 @@
             },
           }),
           h('div', { class: 'controls-row' },
-            h('label', { class: 'field' }, h('span', { class: 'label' }, 'Or type frets (low → high)'),
+            h('label', { class: 'field' }, h('span', { class: 'label' }, 'Frets, low to high'),
               h('input', { class: 'textin mono', value: fretsText, 'data-fk': 'ftext', placeholder: 'x32010', spellcheck: 'false',
                 onchange: (e) => setFrets(parseFrets(e.target.value, n)) })),
-            U.button('Strum', () => A.strum(midis), { icon: 'play', kind: 'primary', disabled: !pcs.length }),
-            U.button('Clear', () => ctx.update({ f: null }), { icon: 'x', kind: 'ghost' }),
-            GA.UI.labelLegend()),
+            U.button('Play', () => A.strum(midis), { icon: 'play', kind: 'primary', disabled: !pcs.length }),
+            pcs.length ? U.button('Clear', () => ctx.update({ f: null }), { kind: 'ghost' }) : null),
         ]
         : [
-          h('p', { class: 'note' }, 'Pick the notes you hear or see. Optionally choose which one is in the bass.'),
           U.noteToggles({ selected: picked, rootPc: bass, onToggle: (pc) => {
             const nx = new Set(picked);
             nx.has(pc) ? nx.delete(pc) : nx.add(pc);
@@ -94,11 +93,11 @@
               options: [{ value: '', label: 'Any / unknown' }].concat([...picked].sort((a, b) => a - b).map((pc) => ({ value: pc, label: T.fmt(U.namePc(pc)) }))),
               onChange: (v) => ctx.update({ b: v === '' ? null : v }) }),
             U.button('Play notes', () => { const base = bass != null ? bass : Math.min(...pcs); A.sequence([...pcs].map((pc) => 48 + base + T.mod(pc - base)).sort((a, b) => a - b), { step: 0.18 }); }, { icon: 'play', kind: 'primary', disabled: !pcs.length }),
-            U.button('Clear', () => ctx.update({ n: null, b: null }), { icon: 'x', kind: 'ghost' })),
+            pcs.length ? U.button('Clear', () => ctx.update({ n: null, b: null }), { kind: 'ghost' }) : null),
         ];
 
       const resultBlock = !pcs.length
-        ? U.empty('Nothing selected yet.')
+        ? h('p', { class: 'note muted' }, 'Nothing selected yet.')
         : pcs.length === 1
           ? h('div', { class: 'idresult' }, h('div', { class: 'id-big' }, T.fmt(U.namePc(pcs[0]))), h('p', { class: 'note' }, 'A single note. Add at least one more.'))
           : h('div', { class: 'idresult' },
@@ -110,9 +109,9 @@
               top.missing.length ? h('p', { class: 'note' }, (top.incomplete ? 'Missing ' : 'Omitted (fine to leave out): ') + top.missing.map(T.fmt).join(', ')) : null,
               U.formula(pcs.slice().sort((a, b) => T.mod(a - top.rootPc) - T.mod(b - top.rootPc)).map(nameOf), pcs.slice().sort((a, b) => T.mod(a - top.rootPc) - T.mod(b - top.rootPc)).map(ivOf)))
               : h('div', { class: 'id-top' }, h('div', { class: 'id-big muted' }, 'No standard name'), h('p', { class: 'note' }, 'These notes don’t form a chord in the library. Try removing a note, or check the Scale Identifier.')),
-            exact.length > 1 || partial.length ? h('div', { class: 'id-alts' },
+            exact.length > 1 || (partial.length > 1 && !exact.length) ? h('div', { class: 'id-alts' },
               exact.length > 1 ? [h('div', { class: 'label' }, 'Also could be'), h('div', { class: 'altlist' }, exact.slice(1, 9).map(altLink))] : null,
-              partial.length && exact.length ? [h('div', { class: 'label' }, 'Close matches (a note missing)'), h('div', { class: 'altlist' }, partial.map(altLink))] : null) : null);
+              partial.length > 1 && !exact.length ? [h('div', { class: 'label' }, 'Other close matches'), h('div', { class: 'altlist' }, partial.slice(1).map(altLink))] : null) : null);
 
       function altLink(r) {
         const c = T.chord(r.rootPc, r.typeId, U.pref());
@@ -125,7 +124,7 @@
         h('div', { class: 'controls' }, U.seg({ value: mode, fk: 'mode', options: [{ value: 'neck', label: 'On the fretboard' }, { value: 'notes', label: 'From notes' }], onChange: (v) => ctx.update({ m: v === 'notes' ? 'notes' : null }) })),
         h('div', { class: 'id-grid' },
           h('div', { class: 'id-input' }, input),
-          h('div', { class: 'id-out' }, h('div', { class: 'label' }, 'Result'), resultBlock,
+          h('div', { class: 'id-out' }, resultBlock,
             mode === 'neck' && pcs.length >= 2 ? h('div', { class: 'id-diagram' }, R.chordDiagram({
               frets, fingers: V.fingering(frets).fingers, barre: V.fingering(frets).barre, midis,
               intervals: midis.map((m) => (m == null ? null : ivOf(m % 12))),

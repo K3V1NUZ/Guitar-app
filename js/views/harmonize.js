@@ -8,6 +8,7 @@
     num: '05',
     group: 'Connect',
     title: 'Scales → Chords',
+    short: 'The chords that live inside a scale.',
     blurb: 'Harmonise any scale: the diatonic triads and sevenths with Roman numerals, plus every chord that fits.',
     keywords: 'diatonic chords in key harmonize roman numerals',
     render(el, p, ctx) {
@@ -40,11 +41,11 @@
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'controls' },
+        h('div', { class: 'picker' },
           U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v }) }),
           h('div', { class: 'controls-row' },
-            U.select({ label: 'Scale', value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v }), fk: 'scale', wide: true }),
-            harm ? U.seg({ label: 'Show', value: kind, fk: 'k', options: [{ value: 'both', label: 'Triads & 7ths' }, { value: '3', label: 'Triads' }, { value: '7', label: 'Sevenths' }], onChange: (v) => ctx.update({ k: v === 'both' ? null : v }) }) : null)),
+            U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v }), fk: 'scale', wide: true }),
+            harm ? U.seg({ value: kind, fk: 'k', options: [{ value: 'both', label: 'Triads & 7ths' }, { value: '3', label: 'Triads' }, { value: '7', label: 'Sevenths' }], onChange: (v) => ctx.update({ k: v === 'both' ? null : v }) }) : null)),
         h('div', { class: 'keyline' },
           h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
           U.formula(sc.names, sc.intervals)),
@@ -56,12 +57,12 @@
           h('div', { class: 'controls-row' }, U.button('Build a progression in this key', () => GA.go('progressions', { root, scale: id === 'minor' || id === 'harmminor' ? 'minor' : 'major' }), { icon: 'right', kind: 'ghost' })),
         ] : h('p', { class: 'note' }, 'This scale doesn’t have seven notes, so there’s no stack-of-thirds harmony. Here is every chord from the library that fits inside it:'),
 
-        U.section('Every chord that fits', h('div', { class: 'fitlist' }, fits.map((row) => h('div', { class: 'fitrow' },
+        U.disclosure('Every chord that fits', h('div', { class: 'fitlist' }, fits.map((row) => h('div', { class: 'fitrow' },
           h('div', { class: 'fit-root' }, h('span', { class: 'fnote' }, T.fmt(row.rootName)), h('span', { class: 'fiv' }, T.fmt(row.interval))),
           h('div', { class: 'fit-chips' }, row.chords.length ? row.chords.map((c) => h('a', {
             class: 'chip', href: GA.href('chords', { root: row.rootPc, type: c.id }), title: c.name,
           }, T.fmt(row.rootName + c.sym))) : h('span', { class: 'muted' }, 'none'))))),
-        { aside: h('span', { class: 'block-aside' }, 'Chords built only from notes of the scale') }),
+        { id: 'fits', open: !harm, hint: 'chords built only from notes of the scale' }),
       );
     },
   });

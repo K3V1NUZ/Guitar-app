@@ -56,6 +56,7 @@
 
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
     current = { id: view.id, params };
+    document.body.dataset.view = view.id;
 
     const ctx = {
       params,
@@ -104,8 +105,7 @@
     }
     return h('nav', { class: 'nav', 'aria-label': 'Tools' }, groups.map((g) => h('div', { class: 'nav-group' },
       h('div', { class: 'nav-group-name' }, g.name),
-      g.items.map((v) => h('a', { href: buildHash(v.id), 'data-id': v.id },
-        h('span', { class: 'nav-num' }, v.num), h('span', { class: 'nav-t' }, v.title))))));
+      g.items.map((v) => h('a', { href: buildHash(v.id), 'data-id': v.id }, h('span', { class: 'nav-t' }, v.title))))));
   }
 
   function tuningLabel() {
@@ -120,7 +120,6 @@
         h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, brandMark()),
         h('span', { class: 'brand-t' }, 'Fretbook'),
       ),
-      h('p', { class: 'brand-sub' }, 'A field guide to the guitar neck'),
       buildNav(),
       h('div', { class: 'side-foot' },
         h('span', { class: 'offline-dot', id: 'offlineState' }, 'Works offline'),
@@ -129,7 +128,7 @@
       h('button', { class: 'iconbtn menu-btn', type: 'button', 'aria-label': 'Menu', onclick: () => document.body.classList.toggle('nav-open') }, U.icon('menu', 20)),
       h('a', { class: 'brand brand-mobile', href: '#/' }, h('span', { class: 'brand-mark' }, brandMark()), h('span', { class: 'brand-t' }, 'Fretbook')),
       h('button', { class: 'searchbtn', type: 'button', onclick: openPalette },
-        U.icon('search', 16), h('span', null, 'Find a chord, scale or tool'), h('kbd', null, navigator.platform && /Mac/.test(navigator.platform) ? '⌘K' : 'Ctrl K')),
+        U.icon('search', 16), h('span', null, 'Search chords, scales, tools'), h('kbd', null, navigator.platform && /Mac/.test(navigator.platform) ? '⌘K' : 'Ctrl K')),
       h('div', { class: 'top-right' },
         h('button', { class: 'tuning-pill', type: 'button', id: 'tuningPill', onclick: openSettings, title: 'Tuning' }, h('span', { class: 'tp-name' }, S.tuning().name), h('span', { class: 'tp-notes' }, tuningLabel())),
         h('button', { class: 'iconbtn', type: 'button', 'aria-label': 'Settings', onclick: openSettings }, U.icon('gear', 19))));
@@ -156,17 +155,20 @@
       panel.replaceChildren(
         h('header', { class: 'settings-h' }, h('h2', null, 'Settings'), h('button', { class: 'iconbtn', type: 'button', 'aria-label': 'Close settings', onclick: closeSettings }, U.icon('x'))),
         h('div', { class: 'settings-b' },
-          U.select({ label: 'Tuning / instrument', value: t.tuning, onChange: (v) => S.set('tuning', v), wide: true,
-            options: T.TUNINGS.map((x) => ({ value: x.id, label: `${x.name} — ${x.notes.map((m) => U.namePc(m)).join(' ')}`, group: x.id === 'uke' || x.id === 'bass' || x.id === 'seven' ? 'Other instruments' : 'Guitar' })) }),
-          U.seg({ label: 'Handedness', value: t.lefty ? 'L' : 'R', options: [{ value: 'R', label: 'Right' }, { value: 'L', label: 'Left' }], onChange: (v) => S.set('lefty', v === 'L') }),
-          U.seg({ label: 'Accidentals for bare notes', value: t.pref, options: [{ value: 'auto', label: 'Auto' }, { value: 'sharp', label: '♯ Sharps' }, { value: 'flat', label: '♭ Flats' }], onChange: (v) => S.set('pref', v) }),
-          U.seg({ label: 'Chord diagram labels', value: t.diagramLabel, options: [{ value: 'fingers', label: 'Fingers' }, { value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => S.set('diagramLabel', v) }),
-          U.seg({ label: 'Frets shown on the neck', value: String(t.frets), options: ['12', '15', '19', '22', '24'].map((x) => ({ value: x, label: x })), onChange: (v) => S.set('frets', +v) }),
-          U.seg({ label: 'Theme', value: t.theme, options: [{ value: 'auto', label: 'System' }, { value: 'light', label: 'Paper' }, { value: 'dark', label: 'Rosewood' }], onChange: (v) => S.set('theme', v) }),
-          h('div', { class: 'field' }, h('div', { class: 'label' }, 'Sound'),
+          h('section', { class: 'set-group' }, h('h3', null, 'Instrument'),
+            U.select({ label: 'Tuning', value: t.tuning, onChange: (v) => S.set('tuning', v), wide: true,
+              options: T.TUNINGS.map((x) => ({ value: x.id, label: `${x.name} — ${x.notes.map((m) => U.namePc(m)).join(' ')}`, group: x.id === 'uke' || x.id === 'bass' || x.id === 'seven' ? 'Other instruments' : 'Guitar' })) }),
+            U.seg({ label: 'Handedness', value: t.lefty ? 'L' : 'R', options: [{ value: 'R', label: 'Right' }, { value: 'L', label: 'Left' }], onChange: (v) => S.set('lefty', v === 'L') }),
+            U.seg({ label: 'Frets on the neck', value: String(t.frets), options: ['12', '15', '19', '22', '24'].map((x) => ({ value: x, label: x })), onChange: (v) => S.set('frets', +v) })),
+          h('section', { class: 'set-group' }, h('h3', null, 'Display'),
+            U.seg({ label: 'Theme', value: t.theme, options: [{ value: 'auto', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }], onChange: (v) => S.set('theme', v) }),
+            U.seg({ label: 'Chord diagram labels', value: t.diagramLabel, options: [{ value: 'fingers', label: 'Fingers' }, { value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => S.set('diagramLabel', v) }),
+            U.seg({ label: 'Accidentals', value: t.pref, options: [{ value: 'auto', label: 'Auto' }, { value: 'sharp', label: '♯' }, { value: 'flat', label: '♭' }], onChange: (v) => S.set('pref', v) }),
+            U.toggle({ label: 'Show piano keyboard', checked: t.piano, onChange: (v) => S.set('piano', v) })),
+          h('section', { class: 'set-group' }, h('h3', null, 'Sound'),
             U.toggle({ label: 'Play sounds', checked: t.sound, onChange: (v) => S.set('sound', v) }),
             h('input', { type: 'range', min: 0, max: 1, step: 0.05, value: t.volume, class: 'range', 'aria-label': 'Volume', oninput: (e) => { S.set('volume', +e.target.value); GA.Audio.setVolume(+e.target.value); } })),
-          h('p', { class: 'settings-note' }, 'Everything is stored on this device. Fretbook needs no connection once loaded — install it from your browser’s menu to keep it as an app.'),
+          h('p', { class: 'settings-note' }, 'Saved on this device. Works without a connection — use your browser’s Install option to keep it as an app.'),
         ));
     };
     draw();

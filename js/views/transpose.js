@@ -101,6 +101,7 @@ Every scale a place to go`;
     num: '12',
     group: 'Play',
     title: 'Transposer & Capo',
+    short: 'Change key, find the best capo.',
     blurb: 'Paste a chord sheet, shift it to any key, and find the capo position with the easiest shapes.',
     keywords: 'transpose key change capo chord sheet lyrics song',
     render(el, p, ctx) {

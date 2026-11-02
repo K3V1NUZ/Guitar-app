@@ -8,6 +8,7 @@
     num: '10',
     group: 'Play',
     title: 'Tuner',
+    short: 'Microphone tuner and reference tones.',
     blurb: 'A chromatic tuner using your microphone, plus reference tones for every string of your tuning.',
     keywords: 'tune tuning microphone pitch reference tone',
     render(el) {

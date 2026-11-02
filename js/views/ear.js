@@ -48,6 +48,7 @@
     num: '13',
     group: 'Play',
     title: 'Ear Trainer',
+    short: 'Hear it, name it.',
     blurb: 'Hear it, name it: intervals, chord qualities and modes, with your own selection of what to practise.',
     keywords: 'ear training intervals chord quality quiz listening',
     render(el, p, ctx) {

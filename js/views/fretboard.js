@@ -10,6 +10,7 @@
     num: '08',
     group: 'Connect',
     title: 'Fretboard Map',
+    short: 'Learn where every note lives.',
     blurb: 'Learn the neck: every note, interval maps from any root, and a note-finding quiz.',
     keywords: 'notes on the neck learn fretboard intervals quiz memorise',
     render(el, p, ctx) {

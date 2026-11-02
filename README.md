@@ -6,7 +6,7 @@ An offline guitar theory app — chords, scales and the tools around them — in
 
 | # | Tool | What it does |
 |---|------|--------------|
-| 01 | **Chord Library** | 12 roots × 44 chord types. Formula, spelled notes, piano view, many playable shapes, slash-chord bass notes, inversions, and every chord tone mapped on the neck. |
+| 01 | **Chord Library** | 12 roots × 44 chord types. Formula, spelled notes, playable shapes, slash-chord bass notes, inversions, and every chord tone mapped on the neck. |
 | 02 | **Chord Identifier** | Tap a shape on the fretboard (or type `x32010`), or pick notes — get the name, including slash chords, omitted tones and alternative names. |
 | 03 | **Scale Explorer** | 44 scales/modes on the full neck, positions (P1…P5), step pattern, interval colouring, playback, related scales and modes. |
 | 04 | **Scale Identifier** | Enter notes of a riff → every scale that contains them (exact matches first). |
@@ -20,7 +20,7 @@ An offline guitar theory app — chords, scales and the tools around them — in
 | 12 | **Transposer & Capo** | Paste a chord sheet, transpose it, detect the key, rank capo positions by easy shapes. |
 | 13 | **Ear Trainer** | Intervals, chord qualities, scales & modes, with your own selection. |
 
-Global: alternate tunings (Drop D, DADGAD, open G/D/E/C/A, half/whole step down, 7‑string, ukulele, bass), left‑handed mode, sharps/flats preference, light ("Paper") and dark ("Rosewood") themes, and a <kbd>Ctrl/⌘ K</kbd> search that understands chord symbols (`F#m7b5`) and scales (`d dorian`).
+Global: optional piano-keyboard view (Settings → Display), alternate tunings (Drop D, DADGAD, open G/D/E/C/A, half/whole step down, 7‑string, ukulele, bass), left‑handed mode, sharps/flats preference, light and dark themes, and a <kbd>Ctrl/⌘ K</kbd> search that understands chord symbols (`F#m7b5`) and scales (`d dorian`).
 
 ## How it works
 

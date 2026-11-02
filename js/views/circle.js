@@ -14,6 +14,7 @@
     num: '07',
     group: 'Connect',
     title: 'Circle of Fifths',
+    short: 'Keys and how they relate.',
     blurb: 'Keys, signatures, relative minors and the chords of each key — click around the wheel.',
     keywords: 'circle of fifths fourths key signature relative minor',
     render(el, p, ctx) {

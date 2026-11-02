@@ -23,6 +23,7 @@
     num: '06',
     group: 'Connect',
     title: 'Chords → Scales',
+    short: 'What to play over a chord.',
     blurb: 'Pick a chord and see which scales to solo over it, and which keys it naturally belongs to.',
     keywords: 'chord scale improvisation solo over what scale key',
     render(el, p, ctx) {
@@ -45,18 +46,18 @@
 
       U.mount(el, 
         U.pageHead(this),
-        h('div', { class: 'controls' },
-          U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v }) })),
-        h('div', { class: 'typepicker' }, U.chipGroups({ groups: U.chordTypeGroups(), value: typeId, onChange: (v) => ctx.update({ type: v }) })),
+        h('div', { class: 'picker' },
+          U.rootPicker({ value: root, onChange: (v) => ctx.update({ root: v }) }),
+          U.typePicker({ value: typeId, onChange: (v) => ctx.update({ type: v }) })),
         h('div', { class: 'keyline' },
           h('a', { class: 'id-big', href: GA.href('chords', { root, type: typeId }) }, U.chordName(ch.rootName, ch.type.sym)),
           U.formula(ch.names, ch.intervals),
-          U.button('Hear it', () => { const v = GA.Voicings.best(root, typeId, GA.settings.tuning().notes); v && A.strum(v.midis); }, { icon: 'play', kind: 'ghost' })),
+          U.button(null, () => { const v = GA.Voicings.best(root, typeId, GA.settings.tuning().notes); v && A.strum(v.midis); }, { icon: 'play', kind: 'quiet', title: 'Hear it' })),
         keys.length ? U.section('Diatonic in these keys', h('div', { class: 'keychips' }, keys.map((k) => h('a', { class: 'keychip', href: GA.href('harmonize', { root: k.r, scale: k.sid }) },
           h('span', { class: 'kc-roman' }, k.roman), h('span', { class: 'kc-key' }, T.fmt(k.name) + ' ' + T.SCALE_BY_ID[k.sid].name.replace(' (Ionian)', '').replace(' (Aeolian)', '')))))) : null,
         U.section('Scales built on ' + T.fmt(ch.rootName), same.length ? h('div', { class: 'scards' }, same.map(card)) : U.empty('No scale in the library contains every note of this chord from its root.'),
           { aside: h('span', { class: 'block-aside' }, 'Chord tones in bold') }),
-        other.length ? U.section('Common scales from other roots', h('div', { class: 'scards' }, other.slice(0, 24).map(card))) : null,
+        other.length ? U.disclosure('Common scales from other roots', h('div', { class: 'scards' }, other.slice(0, 24).map(card)), { id: 'otherroots' }) : null,
       );
     },
   });

@@ -13,6 +13,7 @@
     num: '11',
     group: 'Play',
     title: 'Metronome',
+    short: 'Keep time.',
     blurb: 'Rock-steady clicks with accents, subdivisions, tap tempo and a speed trainer that ramps up as you play.',
     keywords: 'tempo bpm click timing practice speed trainer tap',
     render(el) {
