@@ -20,7 +20,7 @@ An offline guitar theory app — chords, scales and the tools around them — in
 | 12 | **Transposer & Capo** | Paste a chord sheet, transpose it, detect the key, rank capo positions by easy shapes. |
 | 13 | **Ear Trainer** | Intervals, chord qualities, scales & modes, with your own selection. |
 
-Global: optional piano-keyboard view (Settings → Display), alternate tunings (Drop D, DADGAD, open G/D/E/C/A, half/whole step down, 7‑string, ukulele, bass), left‑handed mode, sharps/flats preference, light and dark themes, and a <kbd>Ctrl/⌘ K</kbd> search that understands chord symbols (`F#m7b5`) and scales (`d dorian`).
+Global: optional piano-keyboard view (Settings → Display), alternate tunings (Drop D, DADGAD, open G/D/E/C/A, half/whole step down, 7‑string, ukulele, bass), left‑handed mode, sharps/flats preference, light and dark themes, a collapsible sidebar (<kbd>Ctrl/⌘ B</kbd>, peeks open on hover when collapsed), and a <kbd>Ctrl/⌘ K</kbd> search that understands chord symbols (`F#m7b5`) and scales (`d dorian`).
 
 ## How it works
 
@@ -46,4 +46,4 @@ Then visit http://localhost:8080 and use your browser's *Install app* option to 
 npm test
 ```
 
-Fonts: Fraunces, Instrument Sans and IBM Plex Mono — SIL Open Font License.
+Fonts: Geist and Geist Mono — SIL Open Font License.

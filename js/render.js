@@ -101,8 +101,8 @@
     const N = opts.frets || GA.settings.get('frets') || 15;
     const lefty = opts.lefty != null ? opts.lefty : GA.settings.get('lefty');
     const gap = opts.compact ? 22 : 27;
-    const openW = 46;
-    const padT = 18, padB = 30, padL = 34, padR = 16;
+    const openW = 44;
+    const padT = 16, padB = 30, padL = 30, padR = 12;
     const boardW = Math.max(560, N * 62);
     const W = padL + openW + boardW + padR;
     const H = padT + gap * (n - 1) + padB + 16;
@@ -117,29 +117,29 @@
     const kids = [];
 
     // board
-    const bx1 = X(fx(0)), bx2 = X(fx(N) + 6);
-    kids.push(s('rect', { class: 'fb-wood', x: Math.min(bx1, bx2), y: boardTop, width: Math.abs(bx2 - bx1), height: boardBot - boardTop, rx: 2 }));
+    const bx1 = X(fx(0)), bx2 = X(fx(N) + 4);
+    kids.push(s('rect', { class: 'fb-wood', x: Math.min(bx1, bx2), y: boardTop, width: Math.abs(bx2 - bx1), height: boardBot - boardTop, rx: 10 }));
     if (opts.highlightFrets) {
       const [lo, hi] = opts.highlightFrets;
-      const a = X(lo <= 0 ? fx(0) - openW + 6 : fx(lo - 1)), b = X(fx(hi));
-      kids.push(s('rect', { class: 'fb-window', x: Math.min(a, b), y: boardTop - 4, width: Math.abs(b - a), height: boardBot - boardTop + 8, rx: 4 }));
+      const a = X(lo <= 0 ? fx(0) - openW + 4 : fx(lo - 1)), b = X(fx(hi));
+      kids.push(s('rect', { class: 'fb-window', x: Math.min(a, b), y: boardTop - 6, width: Math.abs(b - a), height: boardBot - boardTop + 12, rx: 12 }));
     }
-    // inlays
+    // inlays: quiet dots on the board
     const inlays = [3, 5, 7, 9, 15, 17, 19, 21];
     const midY = (boardTop + boardBot) / 2;
     for (let f = 1; f <= N; f++) {
       const cx = X((fx(f - 1) + fx(f)) / 2);
-      if (inlays.includes(f)) kids.push(s('circle', { class: 'fb-inlay', cx, cy: midY, r: 5.5 }));
+      if (inlays.includes(f)) kids.push(s('circle', { class: 'fb-inlay', cx, cy: midY, r: 4 }));
       if (f === 12 || f === 24) {
-        kids.push(s('circle', { class: 'fb-inlay', cx, cy: top + gap * 0.5 + (n > 4 ? gap : 0) * 0.5, r: 5.5 }));
-        kids.push(s('circle', { class: 'fb-inlay', cx, cy: boardBot - (top + gap * 0.5 + (n > 4 ? gap : 0) * 0.5 - boardTop), r: 5.5 }));
+        kids.push(s('circle', { class: 'fb-inlay', cx, cy: midY - gap, r: 4 }));
+        kids.push(s('circle', { class: 'fb-inlay', cx, cy: midY + gap, r: 4 }));
       }
     }
     // frets
     for (let f = 1; f <= N; f++) {
-      kids.push(s('line', { class: 'fb-fret', x1: X(fx(f)), x2: X(fx(f)), y1: boardTop, y2: boardBot }));
+      kids.push(s('line', { class: 'fb-fret', x1: X(fx(f)), x2: X(fx(f)), y1: boardTop + 3, y2: boardBot - 3 }));
     }
-    kids.push(s('rect', { class: 'fb-nut', x: X(fx(0)) - (lefty ? 0 : 6), y: boardTop - 1, width: 6, height: boardBot - boardTop + 2, rx: 1.5 }));
+    kids.push(s('rect', { class: 'fb-nut', x: X(fx(0)) - (lefty ? -1 : 5), y: boardTop + 3, width: 4, height: boardBot - boardTop - 6, rx: 2 }));
     // fret numbers
     for (let f = 1; f <= N; f++) {
       const strong = inlays.includes(f) || f === 12 || f === 24;
@@ -148,12 +148,13 @@
     // strings + tuning labels
     for (let str = 0; str < n; str++) {
       const y = yOf(str);
-      const thick = 0.8 + Math.max(0, (66 - tuning[str]) / 13);
-      kids.push(s('line', { class: ['fb-string', tuning[str] < 52 ? 'wound' : ''].join(' '), x1: X(padL + 10), x2: X(fx(N) + 6), y1: y, y2: y, 'stroke-width': Math.max(0.8, thick) }));
-      kids.push(s('text', { class: 'fb-tune', x: X(padL - 8), y: y + 4, 'text-anchor': lefty ? 'start' : 'end' }, T.fmt(U.namePc(tuning[str]))));
+      const thick = 0.7 + Math.max(0, (66 - tuning[str]) / 18);
+      kids.push(s('line', { class: 'fb-string', x1: X(padL + 14), x2: X(fx(N) + 4), y1: y, y2: y, 'stroke-width': Math.max(0.7, thick) }));
+      kids.push(s('text', { class: 'fb-tune', x: X(padL - 6), y: y + 4, 'text-anchor': lefty ? 'start' : 'end' }, T.fmt(U.namePc(tuning[str]))));
     }
 
     // cells + marks
+    const R0 = opts.compact ? 9 : 10.5;
     for (let str = 0; str < n; str++) {
       for (let f = 0; f <= N; f++) {
         const midi = tuning[str] + f;
@@ -162,15 +163,14 @@
         const m = opts.mark ? opts.mark(str, f, midi) : null;
         if (opts.onCell) {
           const w = f === 0 ? openW - 8 : fx(f) - fx(f - 1);
-          kids.push(s('rect', {
-            class: 'fb-hit', x: cx - w / 2, y: cy - gap / 2, width: w, height: gap,
-            'data-s': str, 'data-f': f, tabindex: -1,
-          }));
+          kids.push(s('g', { class: 'fb-hit', 'data-s': str, 'data-f': f },
+            s('rect', { x: cx - w / 2, y: cy - gap / 2, width: w, height: gap }),
+            s('circle', { cx, cy, r: R0 })));
         }
         if (m) {
           const g = s('g', { class: ['fb-mark', 'r-' + (m.role || 'plain'), m.cls || ''].join(' '), transform: `translate(${cx} ${cy})` });
-          g.appendChild(s('circle', { r: opts.compact ? 9 : 11 }));
-          if (m.label) g.appendChild(s('text', { y: 3.8, 'text-anchor': 'middle', 'font-size': String(m.label).length > 2 ? 8.5 : 10.5 }, m.label));
+          g.appendChild(s('circle', { r: R0 }));
+          if (m.label) g.appendChild(s('text', { y: 3.6, 'text-anchor': 'middle', 'font-size': String(m.label).length > 2 ? 8 : 10 }, m.label));
           kids.push(g);
         }
       }

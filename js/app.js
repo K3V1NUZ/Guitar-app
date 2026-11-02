@@ -51,7 +51,7 @@
     const ae = document.activeElement;
     const focusKey = ae && ae.getAttribute && ae.getAttribute('data-fk');
     const sel = ae && 'selectionStart' in ae && /text|textarea|search/.test(ae.type || ae.tagName.toLowerCase()) ? [ae.selectionStart, ae.selectionEnd, ae.scrollTop] : null;
-    const scroller = document.scrollingElement;
+    const scroller = document.querySelector('.main') || document.scrollingElement;
     const keepScroll = !changedView ? scroller.scrollTop : 0;
 
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
@@ -76,6 +76,7 @@
 
     // nav state
     document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.id === view.id));
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.side')) document.activeElement.blur();
     document.body.classList.remove('nav-open');
 
     if (changedView) {
@@ -95,8 +96,30 @@
   GA.rerender = render;
 
   /* ---------- Shell ---------- */
+  // Line icons for each tool (24px grid, stroked)
+  const NAV_ICONS = {
+    home: 'M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z',
+    chords: 'M6 4h12v16H6zM6 9h12M6 14h12M10 4v16M14 4v16',
+    identify: 'M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM20.5 20.5 16 16M11 9v2.5M11 14h.01',
+    scales: 'M4 19h4v-4h4v-4h4V7h4',
+    scaleid: 'M4 17h3v-3h3v-3h3M16.5 8a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM21 19l-2-2',
+    harmonize: 'M6 20V12M12 20V5M18 20v-9M4 20h16',
+    chordscales: 'M5 6h14M5 12h9M5 18h5M17 14l3 3-3 3',
+    circle: 'M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM12 4v4',
+    fretboard: 'M3 8h18M3 12h18M3 16h18M7 6v12M12 6v12M17 6v12',
+    progressions: 'M4 7h4v10H4zM10 7h4v10h-4zM16 7h4v10h-4z',
+    tuner: 'M4 17a8 8 0 0 1 16 0M12 17l4-6M12 17h.01',
+    metronome: 'M9 4h6l3 16H6zM12 15l5-7M8 15h8',
+    transpose: 'M8 20V5M5 8l3-3 3 3M16 4v15M13 16l3 3 3-3',
+    ear: 'M3 12h2.5l2-5 3 10 3-13 3 11 1.5-3H21',
+    settings: 'M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8',
+    sidebar: 'M4 5h16v14H4zM9.5 5v14',
+  };
+  const navIcon = (id) => U.s('svg', { class: 'nicon', viewBox: '0 0 24 24', width: 20, height: 20, 'aria-hidden': 'true' }, U.s('path', { d: NAV_ICONS[id] || NAV_ICONS.home }));
+  GA.navIcon = navIcon;
+
   function buildNav() {
-    const groups = [];
+    const groups = [{ name: null, items: [{ id: 'home', title: 'Home' }] }];
     for (const v of GA.views) {
       if (!v.group) continue;
       let g = groups.find((x) => x.name === v.group);
@@ -104,8 +127,8 @@
       g.items.push(v);
     }
     return h('nav', { class: 'nav', 'aria-label': 'Tools' }, groups.map((g) => h('div', { class: 'nav-group' },
-      h('div', { class: 'nav-group-name' }, g.name),
-      g.items.map((v) => h('a', { href: buildHash(v.id), 'data-id': v.id }, h('span', { class: 'nav-t' }, v.title))))));
+      g.name ? h('div', { class: 'nav-group-name' }, h('span', null, g.name)) : null,
+      g.items.map((v) => h('a', { href: buildHash(v.id), 'data-id': v.id, title: v.title }, navIcon(v.id), h('span', { class: 'nav-t' }, v.title))))));
   }
 
   function tuningLabel() {
@@ -113,38 +136,35 @@
     return t.notes.map((m) => T.fmt(U.namePc(m))).join(' ');
   }
 
+  function setCollapsed(v) {
+    document.body.classList.toggle('side-collapsed', v);
+    U.storage.set('sideCollapsed', v);
+  }
+  GA.toggleSidebar = () => {
+    if (matchMedia('(max-width: 900px)').matches) document.body.classList.toggle('nav-open');
+    else setCollapsed(!document.body.classList.contains('side-collapsed'));
+  };
+
   function buildShell() {
     const app = document.getElementById('app');
+    const mac = navigator.platform && /Mac/.test(navigator.platform);
     const side = h('aside', { class: 'side' },
-      h('a', { class: 'brand', href: '#/' },
-        h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, brandMark()),
-        h('span', { class: 'brand-t' }, 'Fretbook'),
-      ),
+      h('div', { class: 'side-top' },
+        h('button', { class: 'navbtn side-toggle', type: 'button', title: 'Toggle sidebar (' + (mac ? '⌘' : 'Ctrl') + ' B)', 'aria-label': 'Toggle sidebar', onclick: GA.toggleSidebar }, navIcon('sidebar'))),
       buildNav(),
       h('div', { class: 'side-foot' },
-        h('span', { class: 'offline-dot', id: 'offlineState' }, 'Works offline'),
-      ));
+        h('button', { class: 'navbtn', type: 'button', title: 'Settings', onclick: openSettings }, navIcon('settings'), h('span', { class: 'nav-t' }, 'Settings')),
+        h('div', { class: 'offline', id: 'offlineState', title: 'Offline status' }, h('i'), h('span', { class: 'nav-t' }, 'Offline ready'))));
     const top = h('div', { class: 'topbar' },
-      h('button', { class: 'iconbtn menu-btn', type: 'button', 'aria-label': 'Menu', onclick: () => document.body.classList.toggle('nav-open') }, U.icon('menu', 20)),
-      h('a', { class: 'brand brand-mobile', href: '#/' }, h('span', { class: 'brand-mark' }, brandMark()), h('span', { class: 'brand-t' }, 'Fretbook')),
+      h('button', { class: 'iconbtn menu-btn', type: 'button', 'aria-label': 'Menu', onclick: GA.toggleSidebar }, navIcon('sidebar')),
       h('button', { class: 'searchbtn', type: 'button', onclick: openPalette },
-        U.icon('search', 16), h('span', null, 'Search chords, scales, tools'), h('kbd', null, navigator.platform && /Mac/.test(navigator.platform) ? '⌘K' : 'Ctrl K')),
+        U.icon('search', 16), h('span', null, 'Search chords, scales, tools'), h('kbd', null, mac ? '⌘K' : 'Ctrl K')),
       h('div', { class: 'top-right' },
-        h('button', { class: 'tuning-pill', type: 'button', id: 'tuningPill', onclick: openSettings, title: 'Tuning' }, h('span', { class: 'tp-name' }, S.tuning().name), h('span', { class: 'tp-notes' }, tuningLabel())),
-        h('button', { class: 'iconbtn', type: 'button', 'aria-label': 'Settings', onclick: openSettings }, U.icon('gear', 19))));
+        h('button', { class: 'tuning-pill', type: 'button', id: 'tuningPill', onclick: openSettings, title: 'Tuning' }, h('span', { class: 'tp-name' }, S.tuning().name), h('span', { class: 'tp-notes' }, tuningLabel()))));
     const main = h('div', { class: 'main' }, top, h('main', { id: 'view', tabindex: '-1' }));
     const scrim = h('div', { class: 'scrim', onclick: () => document.body.classList.remove('nav-open', 'settings-open') });
     app.replaceChildren(side, main, scrim, buildSettings(), buildPalette());
-  }
-
-  function brandMark() {
-    // a tiny chord box
-    const s = U.s;
-    return s('svg', { viewBox: '0 0 24 24', width: 26, height: 26 },
-      s('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2, class: 'bm-box' }),
-      s('line', { x1: 3, x2: 21, y1: 9, y2: 9, class: 'bm-l' }), s('line', { x1: 3, x2: 21, y1: 15, y2: 15, class: 'bm-l' }),
-      s('line', { x1: 9, x2: 9, y1: 3, y2: 21, class: 'bm-l' }), s('line', { x1: 15, x2: 15, y1: 3, y2: 21, class: 'bm-l' }),
-      s('circle', { cx: 15, cy: 12, r: 3, class: 'bm-dot' }));
+    if (U.storage.get('sideCollapsed', false)) document.body.classList.add('side-collapsed');
   }
 
   /* ---------- Settings drawer ---------- */
@@ -192,7 +212,7 @@
     else document.documentElement.setAttribute('data-theme', t);
     const meta = document.querySelector('meta[name="theme-color"]');
     const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-    if (meta) meta.setAttribute('content', dark ? '#1a1511' : '#f1ebe0');
+    if (meta) meta.setAttribute('content', dark ? '#0c0c0e' : '#ececee');
   }
 
   /* ---------- Command palette ---------- */
@@ -279,16 +299,17 @@
     document.addEventListener('keydown', (e) => {
       const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); openPalette(); }
+      else if ((e.key === 'b' || e.key === 'B') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); GA.toggleSidebar(); }
       else if (e.key === 'Escape') { closeSettings(); document.body.classList.remove('nav-open'); }
     });
     render();
     // offline support (service worker can't run from file://)
     const st = document.getElementById('offlineState');
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
-      navigator.serviceWorker.register('sw.js').then(() => { st && st.classList.add('ready'); st && (st.textContent = 'Saved for offline use'); })
-        .catch(() => { st && (st.textContent = 'Offline cache unavailable'); });
+      navigator.serviceWorker.register('sw.js').then(() => { st && st.classList.add('ready'); })
+        .catch(() => { st && st.querySelector('.nav-t') && (st.querySelector('.nav-t').textContent = 'No offline cache'); });
     } else if (location.protocol === 'file:') {
-      st && st.classList.add('ready'); st && (st.textContent = 'Running from disk');
+      st && st.classList.add('ready'); st && (st.querySelector('.nav-t').textContent = 'Running from disk');
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
