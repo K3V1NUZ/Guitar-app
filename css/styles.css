@@ -1079,3 +1079,19 @@ body.side-collapsed .topbar { padding-left: 8px; }
 .fretboard.fb-large .fb-mark text { font-size: 12.5px; }
 .fretboard.fb-large .fb-tune { font-size: 13px; }
 .fretboard.fb-large .fb-num { font-size: 11.5px; }
+
+/* One chord-diagram size across the whole app */
+.chorddiagram, .pcard-body .chorddiagram, .view-chords .vcard .chorddiagram, .cotd-diagram .chorddiagram { width: 140px; max-width: 140px; }
+.vcard, .view-chords .vcard { width: 156px; padding: 10px 6px 8px; }
+.vtab, .view-chords .vtab { font-size: 12px; }
+.degrees { grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); }
+.progression { grid-template-columns: repeat(auto-fill, minmax(164px, 1fr)); }
+.cardrow { grid-template-columns: repeat(auto-fill, minmax(164px, 1fr)); }
+.id-diagram { width: 140px; }
+.ccard-diag { justify-content: center; }
+@media (max-width: 640px) {
+  .vcard, .view-chords .vcard { width: calc(50% - 2px); }
+  .degrees, .progression, .cardrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.fbview { background: var(--surface); border-radius: 18px; box-shadow: var(--card-edge); padding: 20px 20px 22px; }
+@media (min-width: 1100px) { .degrees { grid-template-columns: repeat(7, minmax(0, 1fr)); } }

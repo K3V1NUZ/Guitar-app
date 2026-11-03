@@ -96,6 +96,7 @@
    * }
    */
   R.fretboard = function (opts) {
+    opts = Object.assign({}, opts, { large: true, compact: false }); // one size everywhere
     const tuning = opts.tuning;
     const n = tuning.length;
     const N = opts.frets || GA.settings.get('frets') || 15;

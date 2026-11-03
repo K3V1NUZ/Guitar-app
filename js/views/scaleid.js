@@ -20,7 +20,7 @@
       const tuning = GA.settings.tuning().notes;
       const picked = new Set((p.n || '').split(',').filter((x) => x !== '').map(Number));
       const rootSel = p.r != null && p.r !== '' ? +p.r : null;
-      const mode = p.m === 'neck' ? 'neck' : 'notes';
+      const mode = p.m === 'notes' ? 'notes' : 'neck';
       const showAll = p.all === '1';
       const pcs = [...picked];
       const res = pcs.length ? T.identifyScales(pcs, { rootPc: rootSel }) : [];
@@ -45,7 +45,7 @@
       U.mount(el, 
         U.pageHead(this),
         h('div', { class: 'picker' },
-          U.seg({ value: mode, fk: 'mode', options: [{ value: 'notes', label: 'Pick notes' }, { value: 'neck', label: 'Tap the fretboard' }], onChange: (v) => ctx.update({ m: v === 'neck' ? 'neck' : null }) })),
+          U.seg({ value: mode, fk: 'mode', options: [{ value: 'neck', label: 'Tap the fretboard' }, { value: 'notes', label: 'Pick notes' }], onChange: (v) => ctx.update({ m: v === 'notes' ? 'notes' : null }) })),
         U.renderSections(this, {
           input: () => [
             mode === 'notes'

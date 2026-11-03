@@ -79,7 +79,7 @@
             h('div', { class: 'qprompt' + (quiz.feedback ? (quiz.feedback.ok ? ' ok' : ' bad') : '') },
               quiz.feedback ? (quiz.feedback.ok ? 'Correct — ' + T.fmt(U.namePc(quiz.feedback.correct)) : 'It was ' + T.fmt(U.namePc(quiz.feedback.correct))) : 'Which note is marked?')),
           R.fretboard({
-            tuning, frets: Math.min(N, 12),
+            tuning, frets: N,
             mark: (s, f) => (s === quiz.s && f === quiz.f ? { label: quiz.feedback ? T.fmt(U.namePc(quiz.answer)) : '?', role: quiz.feedback ? (quiz.feedback.ok ? 'third' : 'root') : 'quiz' } : null),
           }),
           h('div', { class: 'quizkeys' }, [...Array(12).keys()].map((pc) => h('button', {
