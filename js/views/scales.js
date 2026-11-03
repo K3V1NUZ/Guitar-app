@@ -72,10 +72,10 @@
           U.select({ value: id, options: U.scaleOptions(), onChange: (v) => ctx.update({ scale: v, pos: null }), fk: 'scale', wide: true })),
         U.renderSections(this, {
           scale: () => h('div', { class: 'hero-block' },
-            h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
-            sc.type.aka ? h('div', { class: 'ch-long' }, 'also ' + sc.type.aka) : null,
+            h('div', { class: 'hb-name' },
+              h('h2', { class: 'sh-name' }, h('span', { class: 'cn-root' }, T.fmt(sc.rootName)), ' ', sc.type.name),
+              h('div', { class: 'steps', title: 'Steps between notes (W = whole, H = half)' }, steps.join(' · '))),
             U.formula(sc.names, sc.intervals, { onNote: (i) => A.pluck(48 + root + (root < 4 ? 12 : 0) + sc.type.pcs[i]) }),
-            h('div', { class: 'steps', title: 'Steps between notes (W = whole, H = half)' }, steps.join(' · ')),
             h('div', { class: 'ch-actions' },
               U.button('Play', () => play('both'), { icon: 'play', kind: 'primary' }),
               U.button(null, () => play('up'), { icon: 'up', kind: 'quiet', title: 'Ascend' }),

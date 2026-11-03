@@ -61,12 +61,13 @@
           U.typePicker({ value: typeId, onChange: (v) => ctx.update({ type: v, v: null, bass: null, all: null }) })),
         U.renderSections(this, {
           chord: () => h('div', { class: 'hero-block' },
-            h('div', { class: 'ch-big' }, U.chordName(ch.rootName, ch.type.sym + (bassName ? '/' + bassName : ''))),
-            h('div', { class: 'ch-long' }, T.fmt(ch.rootName) + ' ' + ch.type.name.toLowerCase() + (bassName ? ' over ' + T.fmt(bassName) : '')),
+            h('div', { class: 'hb-name' },
+              h('div', { class: 'ch-big' }, U.chordName(ch.rootName, ch.type.sym + (bassName ? '/' + bassName : ''))),
+              h('div', { class: 'ch-long' }, T.fmt(ch.rootName) + ' ' + ch.type.name.toLowerCase() + (bassName ? ' over ' + T.fmt(bassName) : ''))),
             U.formula(ch.names, ch.intervals, { onNote: (i) => A.pluck(48 + root + (root < 4 ? 12 : 0) + T.IV[ch.intervals[i]][0]) }),
             h('div', { class: 'ch-actions' },
               U.button('Play', () => { const v = active || voicings[0]; v && A.strum(v.midis); }, { kind: 'primary', icon: 'play', fk: 'strum' }),
-              U.button('Arpeggio', () => { const v = active || voicings[0]; v && A.sequence(v.midis.filter((m) => m != null), { step: 0.16 }); }, { kind: 'ghost' }),
+              U.button(null, () => { const v = active || voicings[0]; v && A.sequence(v.midis.filter((m) => m != null), { step: 0.16 }); }, { kind: 'quiet', icon: 'arp', title: 'Arpeggio' }),
               h('a', { class: 'textlink', href: GA.href('chordscales', { root, type: typeId }) }, 'Scales that fit →'))),
           shapes: () => [
             voicings.length ? h('div', { class: 'voicings' }, voicings.slice(0, limit).map((v, i) => h('button', {
@@ -75,7 +76,6 @@
               title: 'Play and show on the neck',
             }, R.chordDiagram(v, { rootPc: root, names }), h('span', { class: 'vtab' }, V.toText(v.frets)))))
               : U.empty('No comfortable shape for ' + T.fmt(fullSym) + ' in this tuning. Try allowing inversions.'),
-            voicings.length > limit ? h('div', { class: 'center-row' }, h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length + ' shapes')) : null,
           ],
           neck,
           bass: () => h('div', { class: 'controls-row' },
@@ -85,7 +85,9 @@
             U.toggle({ label: 'Allow inversions', checked: inv, fk: 'inv', onChange: (v) => ctx.update({ inv: v ? '1' : null, v: null }) })),
           piano: () => R.piano({ pcs: ch.pcs, rootPc: root, names }),
         }, {
-          shapes: () => h('span', { class: 'block-aside' }, voicings.length + ' found'),
+          shapes: () => (voicings.length > limit
+            ? h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length)
+            : h('span', { class: 'block-aside' }, voicings.length + ' shapes')),
         }),
       );
     },

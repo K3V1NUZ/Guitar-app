@@ -223,14 +223,8 @@
       kids);
   };
 
-  U.pageHead = function (view, extra) {
-    return h('header', { class: 'pagehead' },
-      h('h1', null, view.title),
-      view.blurb ? h('p', { class: 'ph-blurb' }, view.short || view.blurb) : null,
-      view.sections && view.sections.length ? h('button', { type: 'button', class: 'ph-custom', title: 'Customize this page', 'aria-label': 'Customize this page', onclick: () => GA.openLayout(view.id) },
-        U.s('svg', { viewBox: '0 0 24 24', width: 18, height: 18, class: 'nicon' }, U.s('path', { d: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5' }))) : null,
-      extra || null);
-  };
+  /** Page titles live in the top bar now; this keeps the old call sites working. */
+  U.pageHead = function () { return null; };
 
   U.empty = function (text) {
     return h('div', { class: 'empty' }, text);

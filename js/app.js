@@ -57,6 +57,10 @@
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
     current = { id: view.id, params };
     document.body.dataset.view = view.id;
+    const tt = document.getElementById('topTitle');
+    if (tt) tt.textContent = view.id === 'home' ? '' : view.title;
+    const tc = document.getElementById('topCustom');
+    if (tc) tc.hidden = !(view.sections && view.sections.length);
 
     const ctx = {
       params,
@@ -131,11 +135,6 @@
       g.items.map((v) => h('a', { href: buildHash(v.id), 'data-id': v.id, title: v.title }, navIcon(v.id), h('span', { class: 'nav-t' }, v.title))))));
   }
 
-  function tuningLabel() {
-    const t = S.tuning();
-    return t.notes.map((m) => T.fmt(U.namePc(m))).join(' ');
-  }
-
   function setCollapsed(v) {
     document.body.classList.toggle('side-collapsed', v);
     U.storage.set('sideCollapsed', v);
@@ -151,19 +150,19 @@
     const side = h('aside', { class: 'side' },
       h('div', { class: 'side-top' },
         h('button', { class: 'navbtn side-toggle', type: 'button', title: 'Toggle sidebar (' + (mac ? '⌘' : 'Ctrl') + ' B)', 'aria-label': 'Toggle sidebar', onclick: GA.toggleSidebar }, navIcon('sidebar'))),
-      buildNav(),
-      h('div', { class: 'side-foot' },
-        h('button', { class: 'navbtn', type: 'button', title: 'Settings', onclick: openSettings }, navIcon('settings'), h('span', { class: 'nav-t' }, 'Settings')),
-        h('div', { class: 'offline', id: 'offlineState', title: 'Offline status' }, h('i'), h('span', { class: 'nav-t' }, 'Offline ready'))));
+      buildNav());
     const top = h('div', { class: 'topbar' },
-      h('button', { class: 'iconbtn menu-btn', type: 'button', 'aria-label': 'Menu', onclick: GA.toggleSidebar }, navIcon('sidebar')),
+      h('button', { class: 'iconbtn menu-btn', type: 'button', title: 'Show sidebar (' + (mac ? '⌘' : 'Ctrl') + ' B)', 'aria-label': 'Show sidebar', onclick: GA.toggleSidebar }, navIcon('sidebar')),
+      h('div', { class: 'top-title', id: 'topTitle' }),
       h('button', { class: 'searchbtn', type: 'button', onclick: openPalette },
-        U.icon('search', 16), h('span', null, 'Search chords, scales, tools'), h('kbd', null, mac ? '⌘K' : 'Ctrl K')),
+        U.icon('search', 15), h('span', null, 'Search'), h('kbd', null, mac ? '⌘K' : 'Ctrl K')),
       h('div', { class: 'top-right' },
-        h('button', { class: 'tuning-pill', type: 'button', id: 'tuningPill', onclick: openSettings, title: 'Tuning' }, h('span', { class: 'tp-name' }, S.tuning().name), h('span', { class: 'tp-notes' }, tuningLabel()))));
+        h('button', { class: 'iconbtn', type: 'button', id: 'topCustom', title: 'Customize this page', 'aria-label': 'Customize this page', hidden: true, onclick: () => GA.openLayout(current.id) },
+          U.s('svg', { viewBox: '0 0 24 24', width: 19, height: 19, class: 'nicon' }, U.s('path', { d: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5' }))),
+        h('button', { class: 'iconbtn', type: 'button', title: 'Settings', 'aria-label': 'Settings', onclick: openSettings }, navIcon('settings'))));
     const main = h('div', { class: 'main' }, top, h('main', { id: 'view', tabindex: '-1' }));
     const scrim = h('div', { class: 'scrim', onclick: () => document.body.classList.remove('nav-open', 'settings-open') });
-    app.replaceChildren(side, main, scrim, buildSettings(), buildPalette());
+    app.replaceChildren(h('div', { class: 'side-hot', 'aria-hidden': 'true' }), side, main, scrim, buildSettings(), buildPalette());
     if (U.storage.get('sideCollapsed', false)) document.body.classList.add('side-collapsed');
   }
 
@@ -190,7 +189,7 @@
           h('section', { class: 'set-group' }, h('h3', null, 'Sound'),
             U.toggle({ label: 'Play sounds', checked: t.sound, onChange: (v) => S.set('sound', v) }),
             h('input', { type: 'range', min: 0, max: 1, step: 0.05, value: t.volume, class: 'range', 'aria-label': 'Volume', oninput: (e) => { S.set('volume', +e.target.value); GA.Audio.setVolume(+e.target.value); } })),
-          h('p', { class: 'settings-note' }, 'Saved on this device. Works without a connection — use your browser’s Install option to keep it as an app.'),
+          h('p', { class: 'settings-note' }, (GA.offlineReady === 'disk' ? 'Running from disk. ' : GA.offlineReady ? 'Saved for offline use. ' : '') + 'Settings are stored on this device.'),
         ));
     };
     function layoutGroup() {
@@ -208,8 +207,6 @@
       if (k === 'volume') return;
       draw();
       if (k === 'theme') applyTheme();
-      const pill = document.getElementById('tuningPill');
-      if (pill) pill.replaceChildren(h('span', { class: 'tp-name' }, S.tuning().name), h('span', { class: 'tp-notes' }, tuningLabel()));
       if (k !== 'sound') render();
     });
     return panel;
@@ -321,12 +318,10 @@
     });
     render();
     // offline support (service worker can't run from file://)
-    const st = document.getElementById('offlineState');
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
-      navigator.serviceWorker.register('sw.js').then(() => { st && st.classList.add('ready'); })
-        .catch(() => { st && st.querySelector('.nav-t') && (st.querySelector('.nav-t').textContent = 'No offline cache'); });
+      navigator.serviceWorker.register('sw.js').then(() => { GA.offlineReady = true; }).catch(() => { GA.offlineReady = false; });
     } else if (location.protocol === 'file:') {
-      st && st.classList.add('ready'); st && (st.querySelector('.nav-t').textContent = 'Running from disk');
+      GA.offlineReady = 'disk';
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
