@@ -52,12 +52,10 @@
               ? U.noteToggles({ selected: picked, rootPc: rootSel, onToggle: (pc) => toggle(pc) })
               : R.fretboard({ tuning, onCell: (s, f, midi) => toggle(midi % 12, midi),
                 mark: (s, f, midi) => (picked.has(midi % 12) ? { label: T.fmt(U.namePc(midi % 12)), role: midi % 12 === rootSel ? 'root' : 'plain' } : null) }),
-            h('div', { class: 'controls-row' },
-              U.select({ label: 'Tonal centre', value: rootSel == null ? '' : rootSel, fk: 'rsel',
-                options: [{ value: '', label: 'Any root' }].concat([...Array(12).keys()].map((pc) => ({ value: pc, label: T.fmt(U.namePc(pc)) + (picked.has(pc) ? '' : '  (not in your notes)') }))),
-                onChange: (v) => ctx.update({ r: v === '' ? null : v }) }),
-              pcs.length ? U.button('Clear', () => ctx.update({ n: null, r: null }), { kind: 'ghost' }) : null,
-              h('span', { class: 'hint' }, pcs.length ? pcs.length + ' note' + (pcs.length > 1 ? 's' : '') + ' selected' : 'Select at least two notes')),
+            U.opts(U.select({ label: 'Tonal centre', value: rootSel == null ? '' : rootSel, fk: 'rsel',
+              options: [{ value: '', label: 'Any root' }].concat([...Array(12).keys()].map((pc) => ({ value: pc, label: T.fmt(U.namePc(pc)) + (picked.has(pc) ? '' : '  (not in your notes)') }))),
+              onChange: (v) => ctx.update({ r: v === '' ? null : v }) })),
+            pcs.length ? h('div', { class: 'center-row' }, U.button('Clear', () => ctx.update({ n: null, r: null }), { kind: 'ghost' })) : null,
           ],
           exact: () => (!pcs.length ? h('p', { class: 'note muted' }, 'Pick some notes to begin.') : exact.length ? h('div', { class: 'scards' }, exact.slice(0, 24).map(card)) : h('p', { class: 'note muted' }, 'No scale has exactly these notes — see the larger ones.')),
           contains: () => (!pcs.length ? null : contains.length ? [
@@ -65,6 +63,7 @@
             contains.length > 18 && !showAll ? h('div', { class: 'center-row' }, h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + contains.length)) : null,
           ] : h('p', { class: 'note muted' }, 'No larger scales contain these notes.')),
         }, {
+          input: () => [rootSel != null ? h('span', { class: 'block-aside' }, 'Root ' + T.fmt(U.namePc(rootSel))) : null, U.optsButton()],
           exact: () => (pcs.length ? h('span', { class: 'block-aside' }, exact.length + ' found') : null),
           contains: () => h('span', { class: 'block-aside' }, contains.length + ' found'),
         }),

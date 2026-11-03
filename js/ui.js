@@ -309,7 +309,7 @@
   U.card = function (key, title, body, opts = {}) {
     const stKey = 'collapsed.' + key;
     const collapsed = U.storage.get(stKey, opts.open === false);
-    const sec = h('section', { class: ['card', collapsed ? 'is-collapsed' : '', opts.bare ? 'card-bare' : ''], 'data-sec': key });
+    const sec = h('section', { class: ['card', collapsed ? 'is-collapsed' : '', opts.bare ? 'card-bare' : '', U.storage.get('opts.' + key, false) ? 'opts-open' : ''], 'data-sec': key });
     const toggle = () => {
       const now = !sec.classList.contains('is-collapsed');
       sec.classList.toggle('is-collapsed', now);
@@ -323,6 +323,18 @@
         h('button', { type: 'button', class: 'card-chevbtn', tabindex: -1, 'aria-hidden': 'true', onclick: toggle }, h('span', { class: 'card-chev' }))),
       h('div', { class: 'card-wrap' }, h('div', { class: 'card-inner' }, h('div', { class: 'card-body' }, body))));
     return sec;
+  };
+
+  /** Rarely-used controls: hidden until the section's "view options" toggle is on. */
+  U.opts = (...kids) => h('div', { class: 'card-opts' }, kids);
+  U.optsButton = function () {
+    return h('button', { type: 'button', class: 'optsbtn', title: 'View options', 'aria-label': 'View options', onclick: (e) => {
+      const c = e.currentTarget.closest('.card');
+      if (!c) return;
+      c.classList.toggle('opts-open');
+      if (c.classList.contains('is-collapsed')) c.querySelector('.card-toggle').click();
+      U.storage.set('opts.' + c.dataset.sec, c.classList.contains('opts-open'));
+    } }, U.s('svg', { viewBox: '0 0 24 24', width: 16, height: 16, class: 'nicon' }, U.s('path', { d: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5' })));
   };
 
   /* ---------- Layout editor (used in Settings) ---------- */

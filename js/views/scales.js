@@ -82,7 +82,7 @@
               U.button(null, () => play('down'), { icon: 'down', kind: 'quiet', title: 'Descend' }),
               h('a', { class: 'textlink', href: GA.href('harmonize', { root, scale: id }) }, 'Chords in this scale →'))),
           neck: () => [
-            h('div', { class: 'controls-row center-row' },
+            U.opts(
               U.seg({ small: true, value: String(pos), fk: 'pos',
                 options: [{ value: '-1', label: 'Whole neck' }].concat(positions.map((f, i) => ({ value: String(i), label: 'P' + (i + 1), title: 'Starting around fret ' + f }))),
                 onChange: (v) => ctx.update({ pos: v === '-1' ? null : v }) }),
@@ -112,7 +112,7 @@
               h('span', { class: 'mode-notes' }, ms.names.map(T.fmt).join(' ')));
           })) : null),
           piano: () => R.piano({ pcs: sc.pcs, rootPc: root, names }),
-        }),
+        }, { neck: () => [pos >= 0 ? h('span', { class: 'block-aside' }, 'Position ' + (pos + 1)) : null, U.optsButton()] }),
       );
     },
   });

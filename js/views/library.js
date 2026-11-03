@@ -38,6 +38,7 @@
       const limit = p.all === '1' ? voicings.length : 8;
 
       const neck = () => [
+        U.opts(U.seg({ small: true, value: GA.settings.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Note names' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => GA.settings.set('labels', v) })),
         R.fretboard({
           tuning,
           mark: (s, f, midi) => {
@@ -51,7 +52,7 @@
           onCell: (s, f, midi) => A.pluck(midi),
           highlightFrets: active ? [active.minFret || 0, Math.max(active.maxFret, (active.minFret || 1) + 3)] : null,
         }),
-        labelLegend(),
+        labelLegend(false),
       ];
 
       U.mount(el,
@@ -85,6 +86,7 @@
             U.toggle({ label: 'Allow inversions', checked: inv, fk: 'inv', onChange: (v) => ctx.update({ inv: v ? '1' : null, v: null }) })),
           piano: () => R.piano({ pcs: ch.pcs, rootPc: root, names }),
         }, {
+          neck: () => U.optsButton(),
           shapes: () => (voicings.length > limit
             ? h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length)
             : h('span', { class: 'block-aside' }, voicings.length + ' shapes')),
@@ -93,12 +95,12 @@
     },
   });
 
-  function labelLegend() {
+  function labelLegend(withLabels) {
     const S = GA.settings;
-    return h('div', { class: 'legendrow' },
-      h('div', { class: 'legend' },
-        [['root', 'Root'], ['third', '3rd'], ['fifth', '5th'], ['seventh', '7th'], ['ext', 'Other']].map(([r, l]) => h('span', { class: 'lg r-' + r }, h('i'), l))),
-      U.seg({ small: true, value: S.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => S.set('labels', v) }));
+    const legend = h('div', { class: 'legend' },
+      [['root', 'Root'], ['third', '3rd'], ['fifth', '5th'], ['seventh', '7th'], ['ext', 'Other']].map(([r, l]) => h('span', { class: 'lg r-' + r }, h('i'), l)));
+    const labels = U.seg({ small: true, value: S.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => S.set('labels', v) });
+    return withLabels === false ? legend : h('div', { class: 'legendrow' }, legend, labels);
   }
   GA.UI.labelLegend = labelLegend;
 })();

@@ -78,12 +78,12 @@
               return null;
             },
           }),
-          h('div', { class: 'controls-row' },
-            h('label', { class: 'field' }, h('span', { class: 'label' }, 'Frets, low to high'),
-              h('input', { class: 'textin mono', value: fretsText, 'data-fk': 'ftext', placeholder: 'x32010', spellcheck: 'false',
-                onchange: (e) => setFrets(parseFrets(e.target.value, n)) })),
-            U.button('Play', () => A.strum(midis), { icon: 'play', kind: 'primary', disabled: !pcs.length }),
-            pcs.length ? U.button('Clear', () => ctx.update({ f: null }), { kind: 'ghost' }) : null),
+          U.opts(h('label', { class: 'field field-inline' }, h('span', { class: 'label' }, 'Type frets, low to high'),
+            h('input', { class: 'textin mono', value: fretsText, 'data-fk': 'ftext', placeholder: 'x32010', spellcheck: 'false', style: 'width: 150px',
+              onchange: (e) => setFrets(parseFrets(e.target.value, n)) }))),
+          pcs.length ? h('div', { class: 'center-row' },
+            U.button('Play', () => A.strum(midis), { icon: 'play', kind: 'primary' }),
+            U.button('Clear', () => ctx.update({ f: null }), { kind: 'ghost' })) : null,
         ]
         : [
           U.noteToggles({ selected: picked, rootPc: bass, onToggle: (pc) => {
@@ -133,7 +133,7 @@
               frets, fingers: V.fingering(frets).fingers, barre: V.fingering(frets).barre, midis,
               intervals: midis.map((m) => (m == null ? null : ivOf(m % 12))),
             }, { names: new Map(pcs.map((pc) => [pc, nameOf(pc)])) })) : null),
-        }),
+        }, { input: () => (mode === 'neck' ? U.optsButton() : null) }),
       );
     },
   });
