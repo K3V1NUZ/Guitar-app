@@ -32,13 +32,17 @@ Global: optional piano-keyboard view (Settings → Display), alternate tunings (
 
 ## Running
 
-Open `index.html` directly from disk, or serve the folder (needed for offline install and the microphone tuner):
+Needs only Node.js (no `npm install`):
 
 ```bash
-npm start
+npm run dev
 ```
 
-Then visit http://localhost:8080 and use your browser's *Install app* option to keep it as a standalone app.
+Then open http://localhost:8080. You can also just double-click `index.html` — everything except the microphone tuner works straight from disk.
+
+### Keeping it offline as an app
+
+Open it once at http://localhost:8080 in Chrome or Edge and choose **Install** (the icon in the address bar, or menu → *Install Fretbook*). The service worker saves every file, so the installed app opens from your Start menu / Dock and works with no server running and no internet.
 
 ## Tests
 
