@@ -35,7 +35,7 @@
       if (bass != null) bassName = names.get(bass) || U.namePc(bass);
       const fullSym = ch.symbol + (bassName ? '/' + bassName : '');
 
-      const limit = p.all === '1' ? voicings.length : 8;
+      const limit = p.all === '1' ? voicings.length : 7;
 
       const neck = () => [
         U.opts(U.seg({ small: true, value: GA.settings.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Note names' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => GA.settings.set('labels', v) })),
@@ -71,7 +71,7 @@
               U.button(null, () => { const v = active || voicings[0]; v && A.sequence(v.midis.filter((m) => m != null), { step: 0.16 }); }, { kind: 'quiet', icon: 'arp', title: 'Arpeggio' }),
               h('a', { class: 'textlink', href: GA.href('chordscales', { root, type: typeId }) }, 'Scales that fit →'))),
           shapes: () => [
-            voicings.length ? h('div', { class: 'voicings' }, voicings.slice(0, limit).map((v, i) => h('button', {
+            voicings.length ? h('div', { class: ['voicings', p.all === '1' ? '' : 'one-row'] }, voicings.map((v, i) => h('button', {
               type: 'button', class: ['vcard', sel === i ? 'on' : ''], 'data-fk': 'v' + i,
               onclick: () => { A.strum(v.midis); ctx.update({ v: sel === i ? null : i }); },
               title: 'Play and show on the neck',
@@ -89,6 +89,7 @@
           neck: () => U.optsButton(),
           shapes: () => (voicings.length > limit
             ? h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: '1' }) }, 'Show all ' + voicings.length)
+            : p.all === '1' ? h('button', { type: 'button', class: 'morelink', onclick: () => ctx.update({ all: null }) }, 'Show fewer')
             : h('span', { class: 'block-aside' }, voicings.length + ' shapes')),
         }),
       );

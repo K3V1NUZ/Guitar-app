@@ -1058,3 +1058,21 @@ body.side-collapsed .topbar { padding-left: 8px; }
 .rel:hover { background: var(--surface-3); }
 .related { flex-direction: row; }
 .id-out { grid-template-columns: auto auto; justify-content: center; gap: 8px 64px; }
+
+/* White section cards with a very soft edge */
+:root { --card-edge: 0 0 0 1px rgba(17, 17, 20, 0.04), 0 1px 2px rgba(17, 17, 20, 0.04), 0 4px 14px -8px rgba(17, 17, 20, 0.08); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { --card-edge: 0 0 0 1px rgba(255, 255, 255, 0.045); } }
+:root[data-theme='dark'] { --card-edge: 0 0 0 1px rgba(255, 255, 255, 0.045); }
+.sections { gap: 12px; }
+.card, .sections > .card:first-child { background: var(--surface); border-top: 0; border-radius: 18px; box-shadow: var(--card-edge); }
+.card-h { padding: 0 14px 0 18px; }
+.card-body { padding: 2px 20px 22px; }
+.card .chip, .card .alt, .card .scard, .card .mode, .card .rel, .card .keychip, .card .pchip, .card .cf-chord { background: var(--surface-2); }
+
+/* Bigger chord shapes in the library */
+.view-chords .vcard { width: 150px; padding: 10px 6px 8px; }
+.view-chords .vcard .chorddiagram { max-width: 150px; }
+.view-chords .vtab { font-size: 12px; }
+@media (max-width: 640px) { .view-chords .vcard { width: calc(50% - 2px); } }
+.voicings.one-row { flex-wrap: nowrap; justify-content: safe center; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.voicings.one-row .vcard { flex: none; scroll-snap-align: start; }
