@@ -1,5 +1,5 @@
 /* Fretbook service worker — precache everything, serve cache-first, refresh in background. */
-const VERSION = 'fretbook-v8';
+const VERSION = 'fretbook-v9';
 const ASSETS = [
   './', 'index.html', 'manifest.webmanifest', 'css/styles.css',
   'js/theory.js', 'js/voicings.js', 'js/audio.js', 'js/ui.js', 'js/render.js', 'js/app.js',

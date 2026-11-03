@@ -89,7 +89,7 @@
               U.seg({ small: true, value: colorBy, fk: 'col', options: [{ value: 'root', label: 'Root only' }, { value: 'iv', label: 'By interval' }], onChange: (v) => ctx.update({ color: v === 'iv' ? 'iv' : null }) }),
               U.seg({ small: true, value: GA.settings.get('labels'), fk: 'lbl', options: [{ value: 'notes', label: 'Notes' }, { value: 'intervals', label: 'Intervals' }], onChange: (v) => GA.settings.set('labels', v) })),
             R.fretboard({
-              tuning, frets: N,
+              tuning, frets: N, large: true,
               highlightFrets: win,
               mark: (s, f, midi) => {
                 const pc = midi % 12;

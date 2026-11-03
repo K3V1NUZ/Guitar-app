@@ -100,14 +100,15 @@
     const n = tuning.length;
     const N = opts.frets || GA.settings.get('frets') || 15;
     const lefty = opts.lefty != null ? opts.lefty : GA.settings.get('lefty');
-    const gap = opts.compact ? 22 : 27;
+    const gap = opts.compact ? 22 : opts.large ? 36 : 27;
     const openW = 44;
     const padT = 16, padB = 30, padL = 30, padR = 12;
     const boardW = Math.max(560, N * 62);
     const W = padL + openW + boardW + padR;
-    const H = padT + gap * (n - 1) + padB + 16;
+    const H = padT + gap * (n - 1) + padB + 16 + (opts.large ? 8 : 0);
     const top = padT + 8;
-    const boardTop = top - 12, boardBot = top + gap * (n - 1) + 12;
+    const edge = opts.large ? 18 : 12;
+    const boardTop = top - edge, boardBot = top + gap * (n - 1) + edge;
     // fret x positions: blend of real (logarithmic) and linear spacing
     const real = (f) => (1 - Math.pow(2, -f / 12)) / (1 - Math.pow(2, -N / 12));
     const fx = (f) => padL + openW + boardW * (0.62 * real(f) + 0.38 * (f / N));
@@ -154,7 +155,7 @@
     }
 
     // cells + marks
-    const R0 = opts.compact ? 9 : 10.5;
+    const R0 = opts.compact ? 9 : opts.large ? 13.5 : 10.5;
     for (let str = 0; str < n; str++) {
       for (let f = 0; f <= N; f++) {
         const midi = tuning[str] + f;
@@ -170,12 +171,12 @@
         if (m) {
           const g = s('g', { class: ['fb-mark', 'r-' + (m.role || 'plain'), m.cls || ''].join(' '), transform: `translate(${cx} ${cy})` });
           g.appendChild(s('circle', { r: R0 }));
-          if (m.label) g.appendChild(s('text', { y: 3.6, 'text-anchor': 'middle', 'font-size': String(m.label).length > 2 ? 8 : 10 }, m.label));
+          if (m.label) g.appendChild(s('text', { y: opts.large ? 4.4 : 3.6, 'text-anchor': 'middle', 'font-size': (String(m.label).length > 2 ? 8 : 10) * (opts.large ? 1.25 : 1) }, m.label));
           kids.push(g);
         }
       }
     }
-    const svg = s('svg', { class: 'fretboard', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || 'Fretboard' }, kids);
+    const svg = s('svg', { class: 'fretboard' + (opts.large ? ' fb-large' : ''), viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || 'Fretboard' }, kids);
     svg.style.minWidth = Math.round(W * 0.78) + 'px';
     if (opts.onCell) {
       svg.classList.add('interactive');
